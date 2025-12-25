@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Clock, LogIn, LogOut, Calendar, AlertCircle, CheckCircle2, Timer, History } from "lucide-react";
+import { Clock, LogIn, LogOut, Calendar, AlertCircle, CheckCircle2, Timer, History, Download, X } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 // Types
@@ -72,6 +73,8 @@ const Index = () => {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [reminderShown, setReminderShown] = useState(false);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   // Load data from localStorage
   useEffect(() => {
@@ -90,7 +93,22 @@ const Index = () => {
     if (localStorage.getItem(reminderKey)) {
       setReminderShown(true);
     }
+
+    // Check if app is already installed
+    const checkStandalone = window.matchMedia("(display-mode: standalone)").matches;
+    setIsStandalone(checkStandalone);
+
+    // Show install banner if not dismissed and not installed
+    const bannerDismissed = localStorage.getItem("installBannerDismissed");
+    if (!bannerDismissed && !checkStandalone) {
+      setShowInstallBanner(true);
+    }
   }, []);
+
+  const dismissInstallBanner = () => {
+    setShowInstallBanner(false);
+    localStorage.setItem("installBannerDismissed", "true");
+  };
 
   // Update current time every second
   useEffect(() => {
@@ -256,6 +274,33 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Install Banner */}
+      {showInstallBanner && !isStandalone && (
+        <div className="bg-primary/10 border-b border-primary/20 px-4 py-3 animate-slide-up">
+          <div className="max-w-md mx-auto flex items-center justify-between gap-3">
+            <Link 
+              to="/install" 
+              className="flex items-center gap-3 flex-1"
+            >
+              <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+                <Download className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">ثبّت التطبيق</p>
+                <p className="text-xs text-muted-foreground">للوصول السريع من الشاشة الرئيسية</p>
+              </div>
+            </Link>
+            <button
+              onClick={dismissInstallBanner}
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="إغلاق"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="gradient-primary text-primary-foreground py-6 px-4 shadow-lg">
         <div className="max-w-md mx-auto">
