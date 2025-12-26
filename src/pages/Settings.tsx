@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -24,7 +24,21 @@ const Settings = () => {
     entryTime: "",
     actualExitTime: "",
   });
+  const [reminderMinutes, setReminderMinutes] = useState(10);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("reminderMinutes");
+    if (saved) {
+      setReminderMinutes(parseInt(saved, 10));
+    }
+  }, []);
+
+  const handleReminderChange = (value: number) => {
+    setReminderMinutes(value);
+    localStorage.setItem("reminderMinutes", value.toString());
+    toast.success(`تم تعيين التنبيه قبل ${value} دقيقة من الانصراف`);
+  };
 
   const saveRecords = (newRecords: AttendanceRecord[]) => {
     localStorage.setItem("attendanceRecords", JSON.stringify(newRecords));
@@ -220,6 +234,32 @@ const Settings = () => {
           />
         </div>
 
+        {/* Reminder Settings */}
+        <div className="bg-card rounded-3xl shadow-card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Bell className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold text-foreground">إعدادات التنبيه</h2>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              التنبيه قبل الانصراف بـ (دقيقة)
+            </label>
+            <select
+              value={reminderMinutes}
+              onChange={(e) => handleReminderChange(parseInt(e.target.value, 10))}
+              className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
+            >
+              <option value={5}>5 دقائق</option>
+              <option value={10}>10 دقائق</option>
+              <option value={15}>15 دقيقة</option>
+              <option value={20}>20 دقيقة</option>
+              <option value={30}>30 دقيقة</option>
+              <option value={45}>45 دقيقة</option>
+              <option value={60}>ساعة</option>
+            </select>
+          </div>
+        </div>
+
         {/* Import Instructions */}
         <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4">
           <h3 className="text-sm font-semibold text-primary mb-2">تنسيق ملف الاستيراد (CSV)</h3>
@@ -347,7 +387,7 @@ const Settings = () => {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-foreground">
-                      {new Date(record.date).toLocaleDateString("ar-SA", {
+                      {new Date(record.date).toLocaleDateString("en-GB", {
                         weekday: "short",
                         year: "numeric",
                         month: "short",

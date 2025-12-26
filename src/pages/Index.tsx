@@ -29,7 +29,7 @@ const formatTime = (date: Date): string => {
 };
 
 const formatDate = (date: Date): string => {
-  return date.toLocaleDateString("ar-SA", {
+  return date.toLocaleDateString("en-GB", {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -118,6 +118,12 @@ const Index = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Get reminder minutes from settings
+  const getReminderMinutes = (): number => {
+    const saved = localStorage.getItem("reminderMinutes");
+    return saved ? parseInt(saved, 10) : 10;
+  };
+
   // Check for exit reminder
   useEffect(() => {
     if (!todayData.expectedExitTime || reminderShown) return;
@@ -127,8 +133,9 @@ const Index = () => {
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
       const expectedMinutes = parseTimeToMinutes(todayData.expectedExitTime!);
       const diff = expectedMinutes - currentMinutes;
+      const reminderMinutes = getReminderMinutes();
 
-      if (diff <= 10 && diff > 0 && !reminderShown) {
+      if (diff <= reminderMinutes && diff > 0 && !reminderShown) {
         toast.info("تنبيه الانصراف", {
           description: `تبقى ${diff} دقائق على وقت الانصراف`,
           duration: 10000,
@@ -448,7 +455,7 @@ const Index = () => {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-semibold text-foreground">
-                        {new Date(record.date).toLocaleDateString("ar-SA", {
+                        {new Date(record.date).toLocaleDateString("en-GB", {
                           weekday: "short",
                           month: "short",
                           day: "numeric",
