@@ -127,7 +127,7 @@ const Statistics = () => {
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const value = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`;
-      const label = date.toLocaleDateString("ar-SA", { year: "numeric", month: "long" });
+      const label = date.toLocaleDateString("en-GB", { year: "numeric", month: "long" });
       options.push({ value, label });
     }
     return options;
