@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Clock, LogIn, LogOut, Calendar, AlertCircle, CheckCircle2, Timer, History, Download, X } from "lucide-react";
+import { Clock, LogIn, LogOut, Calendar, AlertCircle, CheckCircle2, Timer, History, Download, X, Settings, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -304,6 +304,23 @@ const Index = () => {
       {/* Header */}
       <header className="gradient-primary text-primary-foreground py-6 px-4 shadow-lg">
         <div className="max-w-md mx-auto">
+          {/* Top Icons */}
+          <div className="flex justify-between items-center mb-3">
+            <Link
+              to="/statistics"
+              className="p-2 hover:bg-primary-foreground/10 rounded-xl transition-colors"
+              title="الإحصائيات"
+            >
+              <BarChart3 className="w-6 h-6" />
+            </Link>
+            <Link
+              to="/settings"
+              className="p-2 hover:bg-primary-foreground/10 rounded-xl transition-colors"
+              title="الإعدادات"
+            >
+              <Settings className="w-6 h-6" />
+            </Link>
+          </div>
           <h1 className="text-2xl font-bold text-center mb-1">بصمتي</h1>
           <p className="text-center text-primary-foreground/80 text-sm">نظام الدوام المرن</p>
         </div>
