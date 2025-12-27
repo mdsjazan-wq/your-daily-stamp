@@ -1,9 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell, AlertTriangle, Calculator, Info, RefreshCw } from "lucide-react";
+import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell, AlertTriangle, Calculator, Info, RefreshCw, BellRing } from "lucide-react";
 import { APP_VERSION, APP_BUILD_ID, APP_NAME } from "@/lib/version";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import {
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+  getNotificationSettings,
+  saveNotificationSettings,
+} from "@/lib/notifications";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +46,8 @@ const Settings = () => {
   });
   const [reminderMinutes, setReminderMinutes] = useState(10);
   const [overtimeEnabled, setOvertimeEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -51,7 +60,41 @@ const Settings = () => {
     if (overtimeSaved !== null) {
       setOvertimeEnabled(overtimeSaved === "true");
     }
+
+    // Load notification settings
+    setNotificationsEnabled(getNotificationSettings());
+    setNotificationPermission(getNotificationPermission());
   }, []);
+
+  const handleNotificationToggle = async (enabled: boolean) => {
+    if (enabled) {
+      if (!isNotificationSupported()) {
+        toast.error("الإشعارات غير مدعومة", {
+          description: "متصفحك لا يدعم الإشعارات",
+        });
+        return;
+      }
+
+      const permission = await requestNotificationPermission();
+      setNotificationPermission(permission);
+
+      if (permission === 'granted') {
+        setNotificationsEnabled(true);
+        saveNotificationSettings(true);
+        toast.success("تم تفعيل الإشعارات", {
+          description: "ستتلقى إشعارات تذكيرية بوقت الانصراف",
+        });
+      } else if (permission === 'denied') {
+        toast.error("تم رفض الإذن", {
+          description: "يرجى السماح بالإشعارات من إعدادات المتصفح",
+        });
+      }
+    } else {
+      setNotificationsEnabled(false);
+      saveNotificationSettings(false);
+      toast.success("تم تعطيل الإشعارات");
+    }
+  };
 
   const handleReminderChange = (value: number) => {
     setReminderMinutes(value);
@@ -375,6 +418,36 @@ const Settings = () => {
               <option value={45}>45 دقيقة</option>
               <option value={60}>ساعة</option>
             </select>
+          </div>
+
+          {/* Push Notifications Setting */}
+          <div className="mt-4 pt-4 border-t border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <BellRing className="w-4 h-4 text-primary" />
+                  <p className="text-sm font-medium text-foreground">إشعارات Push</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  تلقي إشعارات حتى عندما يكون التطبيق مغلقاً
+                </p>
+                {notificationPermission === 'denied' && (
+                  <p className="text-xs text-destructive mt-1">
+                    تم رفض الإذن. يرجى السماح من إعدادات المتصفح
+                  </p>
+                )}
+                {notificationPermission === 'unsupported' && (
+                  <p className="text-xs text-warning mt-1">
+                    الإشعارات غير مدعومة في هذا المتصفح
+                  </p>
+                )}
+              </div>
+              <Switch
+                checked={notificationsEnabled}
+                onCheckedChange={handleNotificationToggle}
+                disabled={notificationPermission === 'unsupported' || notificationPermission === 'denied'}
+              />
+            </div>
           </div>
         </div>
 
