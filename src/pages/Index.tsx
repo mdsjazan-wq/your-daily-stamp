@@ -400,7 +400,7 @@ const Index = () => {
       )}
 
       {/* Header */}
-      <header className="gradient-primary text-primary-foreground py-6 px-4 shadow-lg">
+      <header className="gradient-primary text-primary-foreground pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-6 px-4 shadow-lg">
         <div className="max-w-md mx-auto">
           {/* Top Icons */}
           <div className="flex justify-between items-center mb-3">
