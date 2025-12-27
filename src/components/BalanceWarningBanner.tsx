@@ -34,11 +34,17 @@ const formatMinutesToHours = (minutes: number): string => {
 const BalanceWarningBanner = () => {
   const [dismissed, setDismissed] = useState(false);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [overtimeEnabled, setOvertimeEnabled] = useState(true);
 
   useEffect(() => {
     const saved = localStorage.getItem("attendanceRecords");
     if (saved) {
       setRecords(JSON.parse(saved));
+    }
+
+    const overtimeSaved = localStorage.getItem("overtimeEnabled");
+    if (overtimeSaved !== null) {
+      setOvertimeEnabled(overtimeSaved === "true");
     }
 
     // التحقق من إغلاق البانر اليوم
@@ -99,10 +105,12 @@ const BalanceWarningBanner = () => {
       }
     });
 
+    // مراعاة إعداد الساعات الإضافية
+    const effectiveOvertimeMinutes = overtimeEnabled ? totalOvertimeMinutes : 0;
     const totalDeductedMinutes = totalLateMinutes + totalEarlyExitMinutes;
     const permissionHoursInMinutes = MONTHLY_PERMISSION_HOURS * 60;
-    return permissionHoursInMinutes - totalDeductedMinutes + totalOvertimeMinutes;
-  }, [records]);
+    return permissionHoursInMinutes - totalDeductedMinutes + effectiveOvertimeMinutes;
+  }, [records, overtimeEnabled]);
 
   const handleDismiss = () => {
     setDismissed(true);

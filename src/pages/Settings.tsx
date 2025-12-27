@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell, AlertTriangle } from "lucide-react";
+import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell, AlertTriangle, Calculator } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,12 +37,18 @@ const Settings = () => {
     actualExitTime: "",
   });
   const [reminderMinutes, setReminderMinutes] = useState(10);
+  const [overtimeEnabled, setOvertimeEnabled] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("reminderMinutes");
     if (saved) {
       setReminderMinutes(parseInt(saved, 10));
+    }
+    
+    const overtimeSaved = localStorage.getItem("overtimeEnabled");
+    if (overtimeSaved !== null) {
+      setOvertimeEnabled(overtimeSaved === "true");
     }
   }, []);
 
@@ -348,6 +355,30 @@ const Settings = () => {
               <option value={45}>45 دقيقة</option>
               <option value={60}>ساعة</option>
             </select>
+          </div>
+        </div>
+
+        {/* Calculation Settings */}
+        <div className="bg-card rounded-3xl shadow-card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Calculator className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold text-foreground">إعدادات الحساب</h2>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">حساب الساعات الإضافية</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                عند التفعيل، تُضاف ساعات البقاء بعد وقت الانصراف لرصيد الاستئذان
+              </p>
+            </div>
+            <Switch
+              checked={overtimeEnabled}
+              onCheckedChange={(checked) => {
+                setOvertimeEnabled(checked);
+                localStorage.setItem("overtimeEnabled", checked.toString());
+                toast.success(checked ? "تم تفعيل حساب الساعات الإضافية" : "تم تعطيل حساب الساعات الإضافية");
+              }}
+            />
           </div>
         </div>
 

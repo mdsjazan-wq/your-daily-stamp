@@ -38,11 +38,17 @@ const Statistics = () => {
     const now = new Date();
     return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}`;
   });
+  const [overtimeEnabled, setOvertimeEnabled] = useState(true);
 
   useEffect(() => {
     const saved = localStorage.getItem("attendanceRecords");
     if (saved) {
       setRecords(JSON.parse(saved));
+    }
+    
+    const overtimeSaved = localStorage.getItem("overtimeEnabled");
+    if (overtimeSaved !== null) {
+      setOvertimeEnabled(overtimeSaved === "true");
     }
   }, []);
 
@@ -118,10 +124,11 @@ const Statistics = () => {
       }
     });
 
-    // حساب الرصيد
+    // حساب الرصيد - مع مراعاة إعداد الساعات الإضافية
+    const effectiveOvertimeMinutes = overtimeEnabled ? totalOvertimeMinutes : 0;
     const totalDeductedMinutes = totalLateMinutes + totalEarlyExitMinutes;
     const permissionHoursInMinutes = MONTHLY_PERMISSION_HOURS * 60;
-    const remainingMinutes = permissionHoursInMinutes - totalDeductedMinutes + totalOvertimeMinutes;
+    const remainingMinutes = permissionHoursInMinutes - totalDeductedMinutes + effectiveOvertimeMinutes;
 
     return {
       totalRecords: monthRecords.length,
@@ -131,11 +138,11 @@ const Statistics = () => {
       lateAndEarlyCount,
       totalLateMinutes,
       totalEarlyExitMinutes,
-      totalOvertimeMinutes,
+      totalOvertimeMinutes: effectiveOvertimeMinutes,
       totalDeductedMinutes,
       remainingMinutes,
     };
-  }, [records, selectedMonth]);
+  }, [records, selectedMonth, overtimeEnabled]);
 
   const getMonthOptions = () => {
     const options = [];
