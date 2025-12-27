@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { showNotification, getNotificationSettings } from "@/lib/notifications";
 
 // Types
 interface AttendanceRecord {
@@ -201,10 +202,20 @@ const Index = () => {
       const reminderMinutes = getReminderMinutes();
 
       if (diff <= reminderMinutes && diff > 0 && !reminderShown) {
+        // Show in-app toast
         toast.info("تنبيه الانصراف", {
           description: `تبقى ${diff} دقائق على وقت الانصراف`,
           duration: 10000,
         });
+        
+        // Show push notification if enabled
+        if (getNotificationSettings()) {
+          showNotification('تنبيه الانصراف ⏰', {
+            body: `تبقى ${diff} دقائق على وقت الانصراف`,
+            tag: 'exit-reminder',
+          });
+        }
+        
         setReminderShown(true);
         const todayKey = getDateKey(new Date());
         localStorage.setItem(`reminder_${todayKey}`, "true");
@@ -247,6 +258,15 @@ const Index = () => {
 
       // If 5 minutes have passed since expected exit time
       if (diff >= 5 && !exitConfirmShown) {
+        // Show push notification if enabled
+        if (getNotificationSettings()) {
+          showNotification('هل قمت بتسجيل الخروج؟ 🚪', {
+            body: 'مضت 5 دقائق على وقت الانصراف المتوقع',
+            tag: 'exit-confirm',
+            requireInteraction: true,
+          });
+        }
+        
         setShowExitConfirmDialog(true);
         setExitConfirmShown(true);
         localStorage.setItem(`exitConfirm_${todayKey}`, "true");
