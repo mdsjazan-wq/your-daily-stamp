@@ -1,5 +1,47 @@
 // Notification Service for Push Notifications
 
+// Notification sound using Web Audio API
+let audioContext: AudioContext | null = null;
+
+const getAudioContext = (): AudioContext => {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  return audioContext;
+};
+
+// Play notification sound
+export const playNotificationSound = async (): Promise<void> => {
+  if (!getNotificationSoundEnabled()) return;
+  
+  try {
+    const ctx = getAudioContext();
+    
+    // Resume audio context if suspended (required by browsers)
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    // Create a pleasant notification sound (two-tone chime)
+    oscillator.frequency.setValueAtTime(880, ctx.currentTime); // A5
+    oscillator.frequency.setValueAtTime(1108.73, ctx.currentTime + 0.15); // C#6
+    
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+    
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.4);
+  } catch (error) {
+    console.warn('Could not play notification sound:', error);
+  }
+};
+
 export const isNotificationSupported = (): boolean => {
   return 'Notification' in window && 'serviceWorker' in navigator;
 };
@@ -40,6 +82,9 @@ export const showNotification = async (
   }
 
   try {
+    // Play sound when notification is shown
+    await playNotificationSound();
+    
     // Try using Service Worker for persistent notifications
     const registration = await navigator.serviceWorker.ready;
     await registration.showNotification(title, {
@@ -129,4 +174,14 @@ export const saveNotificationSettings = (enabled: boolean): void => {
 export const getNotificationSettings = (): boolean => {
   const saved = localStorage.getItem('notificationsEnabled');
   return saved ? JSON.parse(saved) : false;
+};
+
+// Sound settings
+export const saveNotificationSoundEnabled = (enabled: boolean): void => {
+  localStorage.setItem('notificationSoundEnabled', JSON.stringify(enabled));
+};
+
+export const getNotificationSoundEnabled = (): boolean => {
+  const saved = localStorage.getItem('notificationSoundEnabled');
+  return saved ? JSON.parse(saved) : true; // Default to enabled
 };
