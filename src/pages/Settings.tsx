@@ -572,20 +572,39 @@ const Settings = () => {
               <span className="text-sm font-mono font-medium text-muted-foreground">{APP_BUILD_ID}</span>
             </div>
             <button
-              onClick={() => {
-                if ('serviceWorker' in navigator) {
-                  navigator.serviceWorker.getRegistrations().then((registrations) => {
-                    registrations.forEach((registration) => {
-                      registration.update();
-                    });
-                  });
+              onClick={async () => {
+                try {
+                  toast.info("جاري تحديث التطبيق...");
+                  
+                  // إلغاء تسجيل جميع Service Workers
+                  if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                      await registration.unregister();
+                    }
+                  }
+                  
+                  // مسح caches فقط (localStorage لن يتأثر)
+                  if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (const cacheName of cacheNames) {
+                      await caches.delete(cacheName);
+                    }
+                  }
+                  
+                  toast.success("تم مسح الملفات المؤقتة، جاري إعادة التحميل...");
+                  
+                  // إعادة تحميل الصفحة بعد ثانية
+                  setTimeout(() => window.location.reload(), 1000);
+                } catch (error) {
+                  toast.error("حدث خطأ أثناء التحديث");
+                  console.error("Update error:", error);
                 }
-                window.location.reload();
               }}
               className="w-full flex items-center justify-center gap-2 p-3 mt-2 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
-              التحقق من التحديثات
+              تحديث التطبيق الآن
             </button>
           </div>
         </div>
