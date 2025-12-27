@@ -147,12 +147,23 @@ const Statistics = () => {
   const getMonthOptions = () => {
     const options = [];
     const now = new Date();
+    
+    // إضافة 12 شهر مستقبلي (مثل 2026)
+    for (let i = 12; i >= 1; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const value = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`;
+      const label = date.toLocaleDateString("en-GB", { year: "numeric", month: "long" });
+      options.push({ value, label });
+    }
+    
+    // إضافة الشهر الحالي و 12 شهر ماضي
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const value = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`;
       const label = date.toLocaleDateString("en-GB", { year: "numeric", month: "long" });
       options.push({ value, label });
     }
+    
     return options;
   };
 
