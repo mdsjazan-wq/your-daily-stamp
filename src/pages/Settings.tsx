@@ -50,6 +50,7 @@ const Settings = () => {
     actualExitTime: "",
   });
   const [reminderMinutes, setReminderMinutes] = useState(10);
+  const [exitReminderMinutes, setExitReminderMinutes] = useState(5);
   const [overtimeEnabled, setOvertimeEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
@@ -60,6 +61,11 @@ const Settings = () => {
     const saved = localStorage.getItem("reminderMinutes");
     if (saved) {
       setReminderMinutes(parseInt(saved, 10));
+    }
+    
+    const exitReminderSaved = localStorage.getItem("exitReminderMinutes");
+    if (exitReminderSaved) {
+      setExitReminderMinutes(parseInt(exitReminderSaved, 10));
     }
     
     const overtimeSaved = localStorage.getItem("overtimeEnabled");
@@ -424,6 +430,33 @@ const Settings = () => {
               <option value={30}>30 دقيقة</option>
               <option value={45}>45 دقيقة</option>
               <option value={60}>ساعة</option>
+            </select>
+          </div>
+
+          {/* Exit Reminder Minutes Setting */}
+          <div className="mt-4 pt-4 border-t border-border">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              تنبيه نسيان بصمة الخروج بعد (دقيقة)
+            </label>
+            <p className="text-xs text-muted-foreground mb-2">
+              سيتم تنبيهك إذا لم تسجل الخروج بعد مرور هذه المدة من وقت الانصراف المتوقع
+            </p>
+            <select
+              value={exitReminderMinutes}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10);
+                setExitReminderMinutes(value);
+                localStorage.setItem("exitReminderMinutes", value.toString());
+                toast.success(`تم تغيير وقت تنبيه نسيان الخروج إلى ${value} دقائق`);
+              }}
+              className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
+            >
+              <option value={3}>3 دقائق</option>
+              <option value={5}>5 دقائق</option>
+              <option value={10}>10 دقائق</option>
+              <option value={15}>15 دقيقة</option>
+              <option value={20}>20 دقيقة</option>
+              <option value={30}>30 دقيقة</option>
             </select>
           </div>
 
