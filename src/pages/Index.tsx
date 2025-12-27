@@ -166,6 +166,17 @@ const Index = () => {
 
   // Check-in handler
   const handleCheckIn = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = الأحد, 5 = الجمعة, 6 = السبت
+
+    // التحقق من يوم الإجازة (الجمعة والسبت)
+    if (dayOfWeek === 5 || dayOfWeek === 6) {
+      toast.error("يوم إجازة", {
+        description: "لا يمكن تسجيل الدخول في أيام الجمعة والسبت",
+      });
+      return;
+    }
+
     if (todayData.entryTime) {
       toast.error("تم تسجيل الدخول مسبقاً", {
         description: "لا يمكن تسجيل الدخول أكثر من مرة في اليوم",
@@ -173,7 +184,6 @@ const Index = () => {
       return;
     }
 
-    const now = new Date();
     const hours = now.getHours();
     const minutes = now.getMinutes();
     const totalMinutes = hours * 60 + minutes;
@@ -214,6 +224,30 @@ const Index = () => {
 
   // Check-out handler
   const handleCheckOut = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = الأحد, 5 = الجمعة, 6 = السبت
+
+    // التحقق من يوم الإجازة (الجمعة والسبت)
+    if (dayOfWeek === 5 || dayOfWeek === 6) {
+      toast.error("يوم إجازة", {
+        description: "لا يمكن تسجيل الخروج في أيام الجمعة والسبت",
+      });
+      return;
+    }
+
+    // التحقق من بدء وقت الدوام (7:00 صباحاً)
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentMinutes = hours * 60 + minutes;
+    const workStartTime = 7 * 60; // 7:00 AM = 420 دقيقة
+
+    if (currentMinutes < workStartTime) {
+      toast.error("لم يبدأ الدوام بعد", {
+        description: "لا يمكن تسجيل الخروج قبل الساعة 7:00 صباحاً",
+      });
+      return;
+    }
+
     if (!todayData.entryTime) {
       toast.error("لم يتم تسجيل الدخول", {
         description: "يجب تسجيل الدخول أولاً",
@@ -230,10 +264,7 @@ const Index = () => {
       return;
     }
 
-    const now = new Date();
     const actualExitTime = formatTime(now);
-    
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const expectedMinutes = parseTimeToMinutes(todayData.expectedExitTime!);
 
     let exitStatus: "خروج نظامي" | "خروج مبكر" = "خروج نظامي";
