@@ -12,6 +12,9 @@ import {
   getNotificationSettings,
   saveNotificationSettings,
   showNotification,
+  getNotificationSoundEnabled,
+  saveNotificationSoundEnabled,
+  playNotificationSound,
 } from "@/lib/notifications";
 import {
   AlertDialog,
@@ -49,6 +52,7 @@ const Settings = () => {
   const [reminderMinutes, setReminderMinutes] = useState(10);
   const [overtimeEnabled, setOvertimeEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +69,7 @@ const Settings = () => {
 
     // Load notification settings
     setNotificationsEnabled(getNotificationSettings());
+    setNotificationSoundEnabled(getNotificationSoundEnabled());
     setNotificationPermission(getNotificationPermission());
   }, []);
 
@@ -450,6 +455,31 @@ const Settings = () => {
                 disabled={notificationPermission === 'unsupported' || notificationPermission === 'denied'}
               />
             </div>
+            
+            {/* Notification Sound Toggle */}
+            {notificationsEnabled && (
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">صوت التنبيه</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    تشغيل صوت عند وصول الإشعارات
+                  </p>
+                </div>
+                <Switch
+                  checked={notificationSoundEnabled}
+                  onCheckedChange={(checked) => {
+                    setNotificationSoundEnabled(checked);
+                    saveNotificationSoundEnabled(checked);
+                    if (checked) {
+                      playNotificationSound();
+                      toast.success("تم تفعيل صوت التنبيه");
+                    } else {
+                      toast.success("تم تعطيل صوت التنبيه");
+                    }
+                  }}
+                />
+              </div>
+            )}
             
             {/* Test Notification Button */}
             {notificationsEnabled && (
