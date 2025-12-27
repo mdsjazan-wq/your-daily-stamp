@@ -296,6 +296,16 @@ const Statistics = () => {
             <li>• مثال: الحضور 7:00 ص والانصراف 4:00 م = ساعة إضافية</li>
           </ul>
         </div>
+
+        {/* Footer */}
+        <footer className="text-center py-4 space-y-1">
+          <p className="text-xs text-muted-foreground">
+            نظام بصمتي للدوام المرن © 2026
+          </p>
+          <p className="text-xs text-muted-foreground/70">
+            تصميم: علي حريصي
+          </p>
+        </footer>
       </main>
     </div>
   );
