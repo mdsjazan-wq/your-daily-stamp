@@ -79,12 +79,28 @@ const Index = () => {
   // Load data from localStorage
   useEffect(() => {
     const loadData = () => {
+      const today = new Date();
+      const todayKey = getDateKey(today);
+      const dayOfWeek = today.getDay(); // 0 = الأحد, 5 = الجمعة, 6 = السبت
+
       const savedRecords = localStorage.getItem("attendanceRecords");
       if (savedRecords) {
         setRecords(JSON.parse(savedRecords));
       }
 
-      const todayKey = getDateKey(new Date());
+      // في أيام الإجازة الأسبوعية لا نعرض/نحفظ حالة اليوم
+      if (dayOfWeek === 5 || dayOfWeek === 6) {
+        localStorage.removeItem(`today_${todayKey}`);
+        localStorage.removeItem(`reminder_${todayKey}`);
+        setReminderShown(false);
+        setTodayData({
+          entryTime: null,
+          expectedExitTime: null,
+          status: null,
+        });
+        return;
+      }
+
       const savedToday = localStorage.getItem(`today_${todayKey}`);
       if (savedToday) {
         setTodayData(JSON.parse(savedToday));
