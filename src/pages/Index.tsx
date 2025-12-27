@@ -509,7 +509,7 @@ const Index = () => {
         <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 animate-fade-in stagger-3">
           <h3 className="text-sm font-semibold text-primary mb-2">قواعد الدوام</h3>
           <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• وقت الدخول المسموح: من 07:00 ص إلى 09:00 ص</li>
+            <li>• وقت الدخول المرن: من 07:00 ص إلى 09:00 ص</li>
             <li>• الدخول بعد 09:00 ص يُعتبر تأخير</li>
             <li>• مدة الدوام: 8 ساعات من وقت الدخول</li>
             <li>• الخروج قبل 03:00 م يُعتبر انصراف مبكر</li>
