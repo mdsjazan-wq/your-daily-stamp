@@ -3,6 +3,16 @@ import { Clock, LogIn, LogOut, Calendar, AlertCircle, CheckCircle2, Timer, Histo
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import BalanceWarningBanner from "@/components/BalanceWarningBanner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Types
 interface AttendanceRecord {
@@ -76,6 +86,8 @@ const Index = () => {
   const [reminderShown, setReminderShown] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [exitConfirmShown, setExitConfirmShown] = useState(false);
+  const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false);
 
   // Load data from localStorage
   useEffect(() => {
@@ -117,6 +129,11 @@ const Index = () => {
       const reminderKey = `reminder_${todayKey}`;
       if (localStorage.getItem(reminderKey)) {
         setReminderShown(true);
+      }
+
+      const exitConfirmKey = `exitConfirm_${todayKey}`;
+      if (localStorage.getItem(exitConfirmKey)) {
+        setExitConfirmShown(true);
       }
     };
 
@@ -211,6 +228,59 @@ const Index = () => {
     localStorage.setItem("attendanceRecords", JSON.stringify(newRecords));
     setRecords(newRecords);
   }, []);
+
+  // Check for exit confirmation after 5 minutes past expected exit time
+  useEffect(() => {
+    // Only check if user has checked in but not checked out
+    if (!todayData.entryTime || !todayData.expectedExitTime || exitConfirmShown) return;
+
+    // Check if user already checked out today
+    const todayKey = getDateKey(new Date());
+    const existingRecord = records.find((r) => r.date === todayKey);
+    if (existingRecord?.actualExitTime) return;
+
+    const checkExitConfirmation = () => {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const expectedMinutes = parseTimeToMinutes(todayData.expectedExitTime!);
+      const diff = currentMinutes - expectedMinutes;
+
+      // If 5 minutes have passed since expected exit time
+      if (diff >= 5 && !exitConfirmShown) {
+        setShowExitConfirmDialog(true);
+        setExitConfirmShown(true);
+        localStorage.setItem(`exitConfirm_${todayKey}`, "true");
+      }
+    };
+
+    const interval = setInterval(checkExitConfirmation, 30000);
+    checkExitConfirmation();
+    return () => clearInterval(interval);
+  }, [todayData.entryTime, todayData.expectedExitTime, exitConfirmShown, records]);
+
+  // Handle auto checkout with expected exit time
+  const handleAutoCheckOut = useCallback(() => {
+    const todayKey = getDateKey(new Date());
+    
+    const newRecord: AttendanceRecord = {
+      date: todayKey,
+      entryTime: todayData.entryTime!,
+      expectedExitTime: todayData.expectedExitTime!,
+      actualExitTime: todayData.expectedExitTime!, // Use expected exit time as actual
+      status: todayData.status!,
+      exitStatus: "خروج نظامي",
+    };
+
+    const updatedRecords = records.filter((r) => r.date !== todayKey);
+    updatedRecords.unshift(newRecord);
+    saveRecords(updatedRecords);
+
+    toast.success("تم تسجيل الخروج تلقائياً", {
+      description: `وقت الخروج: ${todayData.expectedExitTime}`,
+    });
+
+    setShowExitConfirmDialog(false);
+  }, [todayData, records, saveRecords]);
 
   // Check-in handler
   const handleCheckIn = () => {
@@ -596,6 +666,27 @@ const Index = () => {
           </p>
         </footer>
       </main>
+
+      {/* Exit Confirmation Dialog */}
+      <AlertDialog open={showExitConfirmDialog} onOpenChange={setShowExitConfirmDialog}>
+        <AlertDialogContent className="max-w-sm mx-4">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center">تأكيد الخروج</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              هل قمت بعمل بصمة الخروج؟
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-3 sm:justify-center">
+            <AlertDialogCancel className="flex-1 mt-0">لا</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleAutoCheckOut}
+              className="flex-1 gradient-success text-success-foreground"
+            >
+              نعم
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
