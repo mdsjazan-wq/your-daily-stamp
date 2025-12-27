@@ -240,7 +240,7 @@ const Index = () => {
     setRecords(newRecords);
   }, []);
 
-  // Check for exit confirmation after 5 minutes past expected exit time
+  // Check for exit confirmation after configured minutes past expected exit time
   useEffect(() => {
     // Only check if user has checked in but not checked out
     if (!todayData.entryTime || !todayData.expectedExitTime || exitConfirmShown) return;
@@ -250,18 +250,21 @@ const Index = () => {
     const existingRecord = records.find((r) => r.date === todayKey);
     if (existingRecord?.actualExitTime) return;
 
+    // Get configured exit reminder minutes (default 5)
+    const exitReminderMinutes = parseInt(localStorage.getItem("exitReminderMinutes") || "5", 10);
+
     const checkExitConfirmation = () => {
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
       const expectedMinutes = parseTimeToMinutes(todayData.expectedExitTime!);
       const diff = currentMinutes - expectedMinutes;
 
-      // If 5 minutes have passed since expected exit time
-      if (diff >= 5 && !exitConfirmShown) {
+      // If configured minutes have passed since expected exit time
+      if (diff >= exitReminderMinutes && !exitConfirmShown) {
         // Show push notification if enabled
         if (getNotificationSettings()) {
           showNotification('هل قمت بتسجيل الخروج؟ 🚪', {
-            body: 'مضت 5 دقائق على وقت الانصراف المتوقع',
+            body: `مضت ${exitReminderMinutes} دقائق على وقت الانصراف المتوقع`,
             tag: 'exit-confirm',
             requireInteraction: true,
           });

@@ -146,11 +146,14 @@ export const scheduleExitReminder = (
       });
     }
 
-    // 5 minutes after expected exit
-    if (diff <= -5 && !exitConfirmSent) {
+    // Get configured exit reminder minutes (default 5)
+    const exitReminderMinutes = parseInt(localStorage.getItem("exitReminderMinutes") || "5", 10);
+
+    // Configured minutes after expected exit
+    if (diff <= -exitReminderMinutes && !exitConfirmSent) {
       exitConfirmSent = true;
       showNotification('هل قمت بتسجيل الخروج؟ 🚪', {
-        body: 'مضت 5 دقائق على وقت الانصراف المتوقع',
+        body: `مضت ${exitReminderMinutes} دقائق على وقت الانصراف المتوقع`,
         tag: 'exit-confirm',
         requireInteraction: true,
       });
