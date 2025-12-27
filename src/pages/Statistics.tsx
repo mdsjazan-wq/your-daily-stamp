@@ -170,7 +170,7 @@ const Statistics = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="gradient-primary text-primary-foreground py-4 px-4 shadow-lg">
+      <header className="gradient-primary text-primary-foreground pt-[calc(env(safe-area-inset-top)+1rem)] pb-4 px-4 shadow-lg">
         <div className="max-w-md mx-auto flex items-center gap-3">
           <Link
             to="/"
