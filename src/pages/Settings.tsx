@@ -1,7 +1,18 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell } from "lucide-react";
+import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface AttendanceRecord {
   date: string;
@@ -143,6 +154,18 @@ const Settings = () => {
     }
     
     toast.success("تم حذف السجل بنجاح");
+  };
+
+  const handleDeleteAllRecords = () => {
+    // مسح جميع السجلات
+    saveRecords([]);
+    
+    // مسح بيانات اليوم الحالي
+    const todayKey = new Date().toISOString().split("T")[0];
+    localStorage.removeItem(`today_${todayKey}`);
+    window.dispatchEvent(new CustomEvent("todayDataCleared"));
+    
+    toast.success("تم حذف جميع السجلات بنجاح");
   };
 
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -391,7 +414,39 @@ const Settings = () => {
 
         {/* Records List */}
         <div className="bg-card rounded-3xl shadow-card p-4">
-          <h2 className="text-lg font-bold text-foreground mb-4">السجلات ({records.length})</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-foreground">السجلات ({records.length})</h2>
+            {records.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="flex items-center gap-1 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-xl transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                    حذف الكل
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="max-w-sm">
+                  <AlertDialogHeader>
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-destructive" />
+                      <AlertDialogTitle>تأكيد حذف جميع السجلات</AlertDialogTitle>
+                    </div>
+                    <AlertDialogDescription>
+                      هل أنت متأكد من حذف جميع السجلات ({records.length} سجل)؟ لا يمكن التراجع عن هذا الإجراء.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="gap-2">
+                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAllRecords}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      حذف الكل
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
           
           {records.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">لا توجد سجلات</p>
