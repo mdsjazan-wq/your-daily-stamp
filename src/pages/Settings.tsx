@@ -133,6 +133,13 @@ const Settings = () => {
   const handleDeleteRecord = (date: string) => {
     const updatedRecords = records.filter((r) => r.date !== date);
     saveRecords(updatedRecords);
+    
+    // إذا كان السجل المحذوف هو سجل اليوم الحالي، نمسح بيانات اليوم أيضاً
+    const todayKey = new Date().toISOString().split("T")[0];
+    if (date === todayKey) {
+      localStorage.removeItem(`today_${todayKey}`);
+    }
+    
     toast.success("تم حذف السجل بنجاح");
   };
 
