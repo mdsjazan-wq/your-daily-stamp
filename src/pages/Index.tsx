@@ -582,9 +582,12 @@ const Index = () => {
         )}
 
         {/* Footer */}
-        <footer className="text-center py-4">
+        <footer className="text-center py-4 space-y-1">
           <p className="text-xs text-muted-foreground">
             نظام بصمتي للدوام المرن © {new Date().getFullYear()}
+          </p>
+          <p className="text-xs text-muted-foreground/70">
+            تصميم: علي حريصي
           </p>
         </footer>
       </main>
