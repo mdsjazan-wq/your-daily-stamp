@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell, AlertTriangle, Calculator } from "lucide-react";
+import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell, AlertTriangle, Calculator, Info, RefreshCw } from "lucide-react";
+import { APP_VERSION, APP_BUILD_DATE, APP_NAME } from "@/lib/version";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
@@ -549,6 +550,50 @@ const Settings = () => {
               ))}
             </div>
           )}
+        </div>
+
+        {/* App Info */}
+        <div className="bg-card rounded-3xl shadow-card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Info className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold text-foreground">معلومات التطبيق</h2>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2 border-b border-border/50">
+              <span className="text-sm text-muted-foreground">اسم التطبيق</span>
+              <span className="text-sm font-semibold text-foreground">{APP_NAME} – نظام الدوام المرن</span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b border-border/50">
+              <span className="text-sm text-muted-foreground">رقم الإصدار</span>
+              <span className="text-sm font-mono font-semibold text-primary">{APP_VERSION}</span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-muted-foreground">آخر تحديث</span>
+              <span className="text-sm font-medium text-foreground">
+                {new Date(APP_BUILD_DATE).toLocaleDateString("ar-SA", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then((registrations) => {
+                    registrations.forEach((registration) => {
+                      registration.update();
+                    });
+                  });
+                }
+                window.location.reload();
+              }}
+              className="w-full flex items-center justify-center gap-2 p-3 mt-2 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              التحقق من التحديثات
+            </button>
+          </div>
         </div>
 
         {/* Footer */}
