@@ -58,32 +58,43 @@ const Statistics = () => {
     let lateCount = 0;
     let earlyExitCount = 0;
     let regularCount = 0;
+    let lateAndEarlyCount = 0; // أيام فيها تأخير وخروج مبكر معاً
 
     monthRecords.forEach((record) => {
       const entryMinutes = parseTimeToMinutes(record.entryTime);
+      const isLate = record.status === "متأخر";
+      const isEarlyExit = record.exitStatus === "خروج مبكر";
       
-      // حساب التأخير (الدخول بعد 9:00 ص)
-      if (record.status === "متأخر") {
+      // حساب دقائق التأخير (الدخول بعد 9:00 ص)
+      if (isLate) {
         const lateMinutes = entryMinutes - FLEXIBLE_END;
         totalLateMinutes += Math.max(0, lateMinutes);
-        lateCount++;
       }
-
-      // لا نحسب ساعات إضافية للحضور المبكر (قبل 7 ص)
-      // لأن الحضور قبل 7 أو في الساعة 7 يُحسب وقت الخروج كـ 3 عصراً
 
       if (record.actualExitTime) {
         const exitMinutes = parseTimeToMinutes(record.actualExitTime);
         const expectedExitMinutes = parseTimeToMinutes(record.expectedExitTime);
 
-        // حساب الخروج المبكر
-        if (record.exitStatus === "خروج مبكر") {
+        // حساب دقائق الخروج المبكر
+        if (isEarlyExit) {
           const earlyMinutes = expectedExitMinutes - exitMinutes;
           totalEarlyExitMinutes += Math.max(0, earlyMinutes);
-          earlyExitCount++;
-        } else {
-          regularCount++;
         }
+      }
+
+      // عد الأيام - كل يوم في فئة واحدة فقط
+      if (isLate && isEarlyExit) {
+        lateAndEarlyCount++; // تأخير + خروج مبكر
+      } else if (isLate) {
+        lateCount++; // تأخير فقط
+      } else if (isEarlyExit) {
+        earlyExitCount++; // خروج مبكر فقط
+      } else {
+        regularCount++; // يوم منتظم
+      }
+
+      if (record.actualExitTime) {
+        const exitMinutes = parseTimeToMinutes(record.actualExitTime);
 
         // حساب الساعات الإضافية من البقاء بعد وقت الانصراف المتوقع
         // وقت الخروج المتوقع: إذا حضر 7 أو قبلها = 15:00، غير ذلك = وقت الدخول + 8 ساعات
@@ -116,6 +127,7 @@ const Statistics = () => {
       lateCount,
       earlyExitCount,
       regularCount,
+      lateAndEarlyCount,
       totalLateMinutes,
       totalEarlyExitMinutes,
       totalOvertimeMinutes,
@@ -259,12 +271,16 @@ const Statistics = () => {
               <span className="font-semibold text-success">{monthlyStats.regularCount} يوم</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/30 rounded-xl">
-              <span className="text-muted-foreground">أيام التأخير</span>
+              <span className="text-muted-foreground">أيام التأخير فقط</span>
               <span className="font-semibold text-warning">{monthlyStats.lateCount} يوم</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/30 rounded-xl">
-              <span className="text-muted-foreground">أيام الخروج المبكر</span>
+              <span className="text-muted-foreground">أيام الخروج المبكر فقط</span>
               <span className="font-semibold text-destructive">{monthlyStats.earlyExitCount} يوم</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-muted/30 rounded-xl">
+              <span className="text-muted-foreground">أيام تأخير + خروج مبكر</span>
+              <span className="font-semibold text-orange-500">{monthlyStats.lateAndEarlyCount} يوم</span>
             </div>
           </div>
         </div>
