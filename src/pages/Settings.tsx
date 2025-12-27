@@ -114,6 +114,15 @@ const Settings = () => {
       return;
     }
 
+    // التحقق من وجود سجل مسبق لهذا اليوم
+    const existingRecord = records.find((r) => r.date === newRecord.date);
+    if (existingRecord) {
+      toast.error("سجل موجود مسبقاً", {
+        description: "يوجد سجل لهذا اليوم بالفعل. يمكنك تعديله أو حذفه من قائمة السجلات",
+      });
+      return;
+    }
+
     const expectedExitTime = calculateExpectedExit(newRecord.entryTime);
     const status = determineStatus(newRecord.entryTime);
     const exitStatus = newRecord.actualExitTime
