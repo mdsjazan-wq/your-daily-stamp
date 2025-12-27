@@ -575,27 +575,31 @@ const Settings = () => {
               onClick={async () => {
                 try {
                   toast.info("جاري تحديث التطبيق...");
-                  
+
                   // إلغاء تسجيل جميع Service Workers
-                  if ('serviceWorker' in navigator) {
+                  if ("serviceWorker" in navigator) {
                     const registrations = await navigator.serviceWorker.getRegistrations();
                     for (const registration of registrations) {
                       await registration.unregister();
                     }
                   }
-                  
+
                   // مسح caches فقط (localStorage لن يتأثر)
-                  if ('caches' in window) {
+                  if ("caches" in window) {
                     const cacheNames = await caches.keys();
                     for (const cacheName of cacheNames) {
                       await caches.delete(cacheName);
                     }
                   }
-                  
+
                   toast.success("تم مسح الملفات المؤقتة، جاري إعادة التحميل...");
-                  
-                  // إعادة تحميل الصفحة بعد ثانية
-                  setTimeout(() => window.location.reload(), 1000);
+
+                  // إعادة تحميل مع كسر كاش المتصفح (بدون لمس السجلات)
+                  setTimeout(() => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("v", Date.now().toString());
+                    window.location.replace(url.toString());
+                  }, 800);
                 } catch (error) {
                   toast.error("حدث خطأ أثناء التحديث");
                   console.error("Update error:", error);
