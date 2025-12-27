@@ -188,7 +188,16 @@ const Index = () => {
     }
 
     const entryTime = formatTime(now);
-    const expectedExitTime = addHoursToTime(entryTime, 8);
+    
+    // إذا كان الحضور الساعة 7 صباحاً أو قبلها، يكون الخروج الساعة 3 عصراً
+    let expectedExitTime: string;
+    if (totalMinutes <= minTime) {
+      const exitDate = new Date();
+      exitDate.setHours(15, 0, 0, 0);
+      expectedExitTime = formatTime(exitDate);
+    } else {
+      expectedExitTime = addHoursToTime(entryTime, 8);
+    }
 
     const newTodayData: TodayData = {
       entryTime,

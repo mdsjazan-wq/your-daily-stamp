@@ -54,6 +54,14 @@ const Settings = () => {
 
   const calculateExpectedExit = (entryTime: string): string => {
     const [hours, minutes] = entryTime.split(":").map(Number);
+    const totalMinutes = hours * 60 + minutes;
+    const minTime = 7 * 60; // 7:00 AM
+    
+    // إذا كان الحضور الساعة 7 صباحاً أو قبلها، يكون الخروج الساعة 3 عصراً
+    if (totalMinutes <= minTime) {
+      return "15:00";
+    }
+    
     const exitHours = (hours + 8) % 24;
     return `${exitHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
   };
