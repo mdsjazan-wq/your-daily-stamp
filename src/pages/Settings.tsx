@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell, AlertTriangle, Calculator, Info, RefreshCw } from "lucide-react";
-import { APP_VERSION, APP_BUILD_DATE, APP_NAME } from "@/lib/version";
+import { APP_VERSION, APP_BUILD_ID, APP_NAME } from "@/lib/version";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
@@ -568,14 +568,8 @@ const Settings = () => {
               <span className="text-sm font-mono font-semibold text-primary">{APP_VERSION}</span>
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">آخر تحديث</span>
-              <span className="text-sm font-medium text-foreground">
-                {new Date(APP_BUILD_DATE).toLocaleDateString("ar-SA", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
+              <span className="text-sm text-muted-foreground">معرف البناء</span>
+              <span className="text-sm font-mono font-medium text-muted-foreground">{APP_BUILD_ID}</span>
             </div>
             <button
               onClick={() => {
