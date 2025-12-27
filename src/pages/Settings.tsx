@@ -4,12 +4,14 @@ import { APP_VERSION, APP_BUILD_ID, APP_NAME } from "@/lib/version";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import {
   isNotificationSupported,
   getNotificationPermission,
   requestNotificationPermission,
   getNotificationSettings,
   saveNotificationSettings,
+  showNotification,
 } from "@/lib/notifications";
 import {
   AlertDialog,
@@ -448,6 +450,29 @@ const Settings = () => {
                 disabled={notificationPermission === 'unsupported' || notificationPermission === 'denied'}
               />
             </div>
+            
+            {/* Test Notification Button */}
+            {notificationsEnabled && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
+                onClick={async () => {
+                  const sent = await showNotification('إشعار تجريبي 🔔', {
+                    body: 'الإشعارات تعمل بشكل صحيح!',
+                    tag: 'test-notification',
+                  });
+                  if (sent) {
+                    toast.success("تم إرسال الإشعار التجريبي");
+                  } else {
+                    toast.error("فشل إرسال الإشعار");
+                  }
+                }}
+              >
+                <BellRing className="w-4 h-4 ml-2" />
+                إرسال إشعار تجريبي
+              </Button>
+            )}
           </div>
         </div>
 
