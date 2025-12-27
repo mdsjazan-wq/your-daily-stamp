@@ -138,6 +138,8 @@ const Settings = () => {
     const todayKey = new Date().toISOString().split("T")[0];
     if (date === todayKey) {
       localStorage.removeItem(`today_${todayKey}`);
+      // إرسال حدث مخصص لتحديث الصفحة الرئيسية
+      window.dispatchEvent(new CustomEvent("todayDataCleared"));
     }
     
     toast.success("تم حذف السجل بنجاح");

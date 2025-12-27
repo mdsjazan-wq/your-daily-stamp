@@ -78,21 +78,32 @@ const Index = () => {
 
   // Load data from localStorage
   useEffect(() => {
-    const savedRecords = localStorage.getItem("attendanceRecords");
-    if (savedRecords) {
-      setRecords(JSON.parse(savedRecords));
-    }
+    const loadData = () => {
+      const savedRecords = localStorage.getItem("attendanceRecords");
+      if (savedRecords) {
+        setRecords(JSON.parse(savedRecords));
+      }
 
-    const todayKey = getDateKey(new Date());
-    const savedToday = localStorage.getItem(`today_${todayKey}`);
-    if (savedToday) {
-      setTodayData(JSON.parse(savedToday));
-    }
+      const todayKey = getDateKey(new Date());
+      const savedToday = localStorage.getItem(`today_${todayKey}`);
+      if (savedToday) {
+        setTodayData(JSON.parse(savedToday));
+      } else {
+        // إذا لم يوجد بيانات اليوم، نعيد تعيين الحالة
+        setTodayData({
+          entryTime: null,
+          expectedExitTime: null,
+          status: null,
+        });
+      }
 
-    const reminderKey = `reminder_${todayKey}`;
-    if (localStorage.getItem(reminderKey)) {
-      setReminderShown(true);
-    }
+      const reminderKey = `reminder_${todayKey}`;
+      if (localStorage.getItem(reminderKey)) {
+        setReminderShown(true);
+      }
+    };
+
+    loadData();
 
     // Check if app is already installed
     const checkStandalone = window.matchMedia("(display-mode: standalone)").matches;
@@ -103,6 +114,26 @@ const Index = () => {
     if (!bannerDismissed && !checkStandalone) {
       setShowInstallBanner(true);
     }
+
+    // الاستماع للتغييرات في localStorage من صفحات أخرى
+    const handleStorageChange = (e: StorageEvent) => {
+      const todayKey = getDateKey(new Date());
+      if (e.key === `today_${todayKey}` || e.key === "attendanceRecords") {
+        loadData();
+      }
+    };
+
+    // الاستماع للحدث المخصص عند حذف بيانات اليوم
+    const handleTodayDataCleared = () => {
+      loadData();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("todayDataCleared", handleTodayDataCleared);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("todayDataCleared", handleTodayDataCleared);
+    };
   }, []);
 
   const dismissInstallBanner = () => {
