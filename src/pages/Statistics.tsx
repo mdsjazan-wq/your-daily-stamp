@@ -69,11 +69,8 @@ const Statistics = () => {
         lateCount++;
       }
 
-      // حساب الساعات الإضافية (الدخول قبل 7:00 ص)
-      if (entryMinutes < FLEXIBLE_START) {
-        const overtimeFromEntry = FLEXIBLE_START - entryMinutes;
-        totalOvertimeMinutes += overtimeFromEntry;
-      }
+      // لا نحسب ساعات إضافية للحضور المبكر (قبل 7 ص)
+      // لأن الحضور قبل 7 أو في الساعة 7 يُحسب وقت الخروج كـ 3 عصراً
 
       if (record.actualExitTime) {
         const exitMinutes = parseTimeToMinutes(record.actualExitTime);
@@ -88,17 +85,19 @@ const Statistics = () => {
           regularCount++;
         }
 
-        // حساب الساعات الإضافية من البقاء بعد وقت الانصراف
-        // لكن فقط إذا كان الدخول من 7:00 ص وضمن الدوام المرن
-        if (entryMinutes >= FLEXIBLE_START && entryMinutes <= FLEXIBLE_END) {
-          // وقت الانصراف المتوقع بناءً على 8 ساعات عمل
-          const standardExpectedExit = entryMinutes + (WORK_HOURS * 60);
-          
-          // إذا بقي بعد الوقت المتوقع
-          if (exitMinutes > standardExpectedExit) {
-            const overtimeFromExit = exitMinutes - standardExpectedExit;
-            totalOvertimeMinutes += overtimeFromExit;
-          }
+        // حساب الساعات الإضافية من البقاء بعد وقت الانصراف المتوقع
+        // وقت الخروج المتوقع: إذا حضر 7 أو قبلها = 15:00، غير ذلك = وقت الدخول + 8 ساعات
+        let standardExpectedExit: number;
+        if (entryMinutes <= FLEXIBLE_START) {
+          standardExpectedExit = 15 * 60; // 3:00 PM
+        } else {
+          standardExpectedExit = entryMinutes + (WORK_HOURS * 60);
+        }
+        
+        // إذا بقي بعد الوقت المتوقع
+        if (exitMinutes > standardExpectedExit) {
+          const overtimeFromExit = exitMinutes - standardExpectedExit;
+          totalOvertimeMinutes += overtimeFromExit;
         }
       }
     });
