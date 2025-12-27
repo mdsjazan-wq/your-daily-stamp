@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Clock, LogIn, LogOut, Calendar, AlertCircle, CheckCircle2, Timer, History, Download, X, Settings, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import BalanceWarningBanner from "@/components/BalanceWarningBanner";
 
 // Types
 interface AttendanceRecord {
@@ -368,6 +369,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Balance Warning Banner */}
+      <BalanceWarningBanner />
+
       {/* Install Banner */}
       {showInstallBanner && !isStandalone && (
         <div className="bg-primary/10 border-b border-primary/20 px-4 py-3 animate-slide-up">

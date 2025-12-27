@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { ArrowRight, Clock, TrendingUp, TrendingDown, AlertTriangle, CheckCircle } from "lucide-react";
+import { ArrowRight, Clock, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, BarChart2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import AttendanceCharts from "@/components/AttendanceCharts";
 
 interface AttendanceRecord {
   date: string;
@@ -283,6 +284,27 @@ const Statistics = () => {
               <span className="font-semibold text-orange-500">{monthlyStats.lateAndEarlyCount} يوم</span>
             </div>
           </div>
+        </div>
+
+        {/* Interactive Charts */}
+        <div className="space-y-2">
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <BarChart2 className="w-5 h-5 text-primary" />
+            التحليل البياني
+          </h2>
+          <AttendanceCharts 
+            records={records}
+            selectedMonth={selectedMonth}
+            chartData={{
+              regularCount: monthlyStats.regularCount,
+              lateCount: monthlyStats.lateCount,
+              earlyExitCount: monthlyStats.earlyExitCount,
+              lateAndEarlyCount: monthlyStats.lateAndEarlyCount,
+              totalOvertimeMinutes: monthlyStats.totalOvertimeMinutes,
+              totalLateMinutes: monthlyStats.totalLateMinutes,
+              totalEarlyExitMinutes: monthlyStats.totalEarlyExitMinutes,
+            }}
+          />
         </div>
 
         {/* Rules Info */}
