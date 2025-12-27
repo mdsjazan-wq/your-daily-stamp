@@ -104,6 +104,16 @@ const Settings = () => {
       return;
     }
 
+    // التحقق من يوم الإجازة (الجمعة والسبت)
+    const selectedDate = new Date(newRecord.date);
+    const dayOfWeek = selectedDate.getDay(); // 0 = الأحد, 5 = الجمعة, 6 = السبت
+    if (dayOfWeek === 5 || dayOfWeek === 6) {
+      toast.error("يوم إجازة", {
+        description: "لا يمكن إضافة سجل في أيام الجمعة والسبت",
+      });
+      return;
+    }
+
     const expectedExitTime = calculateExpectedExit(newRecord.entryTime);
     const status = determineStatus(newRecord.entryTime);
     const exitStatus = newRecord.actualExitTime
