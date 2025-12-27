@@ -251,43 +251,7 @@ const Settings = () => {
           />
         </div>
 
-        {/* Reminder Settings */}
-        <div className="bg-card rounded-3xl shadow-card p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Bell className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-foreground">إعدادات التنبيه</h2>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              التنبيه قبل الانصراف بـ (دقيقة)
-            </label>
-            <select
-              value={reminderMinutes}
-              onChange={(e) => handleReminderChange(parseInt(e.target.value, 10))}
-              className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
-            >
-              <option value={5}>5 دقائق</option>
-              <option value={10}>10 دقائق</option>
-              <option value={15}>15 دقيقة</option>
-              <option value={20}>20 دقيقة</option>
-              <option value={30}>30 دقيقة</option>
-              <option value={45}>45 دقيقة</option>
-              <option value={60}>ساعة</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Import Instructions */}
-        <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4">
-          <h3 className="text-sm font-semibold text-primary mb-2">تنسيق ملف الاستيراد (CSV)</h3>
-          <p className="text-xs text-muted-foreground">
-            التاريخ,وقت_الدخول,وقت_الخروج<br />
-            2024-01-15,08:30,16:30<br />
-            2024-01-16,07:45,15:45
-          </p>
-        </div>
-
-        {/* Add Form */}
+        {/* Add Form - يظهر مباشرة تحت الأزرار */}
         {showAddForm && (
           <div className="bg-card rounded-3xl shadow-card p-6 animate-scale-in">
             <div className="flex items-center justify-between mb-4">
@@ -337,6 +301,42 @@ const Settings = () => {
             </div>
           </div>
         )}
+
+        {/* Reminder Settings */}
+        <div className="bg-card rounded-3xl shadow-card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Bell className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold text-foreground">إعدادات التنبيه</h2>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              التنبيه قبل الانصراف بـ (دقيقة)
+            </label>
+            <select
+              value={reminderMinutes}
+              onChange={(e) => handleReminderChange(parseInt(e.target.value, 10))}
+              className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
+            >
+              <option value={5}>5 دقائق</option>
+              <option value={10}>10 دقائق</option>
+              <option value={15}>15 دقيقة</option>
+              <option value={20}>20 دقيقة</option>
+              <option value={30}>30 دقيقة</option>
+              <option value={45}>45 دقيقة</option>
+              <option value={60}>ساعة</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Import Instructions */}
+        <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4">
+          <h3 className="text-sm font-semibold text-primary mb-2">تنسيق ملف الاستيراد (CSV)</h3>
+          <p className="text-xs text-muted-foreground">
+            التاريخ,وقت_الدخول,وقت_الخروج<br />
+            2024-01-15,08:30,16:30<br />
+            2024-01-16,07:45,15:45
+          </p>
+        </div>
 
         {/* Edit Form */}
         {editingRecord && (
