@@ -8,6 +8,7 @@ import Install from "./pages/Install";
 import Settings from "./pages/Settings";
 import Statistics from "./pages/Statistics";
 import NotFound from "./pages/NotFound";
+import UpdateNotification from "./components/UpdateNotification";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +17,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <UpdateNotification />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
