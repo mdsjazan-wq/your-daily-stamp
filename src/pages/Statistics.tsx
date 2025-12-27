@@ -94,9 +94,13 @@ const Statistics = () => {
           standardExpectedExit = entryMinutes + (WORK_HOURS * 60);
         }
         
-        // إذا بقي بعد الوقت المتوقع
-        if (exitMinutes > standardExpectedExit) {
-          const overtimeFromExit = exitMinutes - standardExpectedExit;
+        // الحد الأقصى لحساب الساعات الإضافية هو 5:00 م
+        const maxOvertimeLimit = 17 * 60; // 5:00 PM
+        const cappedExitMinutes = Math.min(exitMinutes, maxOvertimeLimit);
+        
+        // إذا بقي بعد الوقت المتوقع (حتى 5 عصراً كحد أقصى)
+        if (cappedExitMinutes > standardExpectedExit) {
+          const overtimeFromExit = cappedExitMinutes - standardExpectedExit;
           totalOvertimeMinutes += overtimeFromExit;
         }
       }
