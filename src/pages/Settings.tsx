@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import BeaconSettings from "@/components/BeaconSettings";
 
 interface AttendanceRecord {
   date: string;
@@ -673,6 +674,9 @@ const Settings = () => {
             />
           </div>
         </div>
+
+        {/* Beacon Settings */}
+        <BeaconSettings />
 
         {/* Import Instructions */}
         <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4">
