@@ -2,6 +2,8 @@
 
 // Notification sound using Web Audio API
 let audioContext: AudioContext | null = null;
+let activeAlarmInterval: number | null = null;
+let isAlarmActive = false;
 
 const getAudioContext = (): AudioContext => {
   if (!audioContext) {
@@ -10,63 +12,80 @@ const getAudioContext = (): AudioContext => {
   return audioContext;
 };
 
-// Play notification sound - صوت قوي ومتكرر للتنبيه
-export const playNotificationSound = async (): Promise<void> => {
-  if (!getNotificationSoundEnabled()) return;
-  
+// إيقاف صوت الإنذار
+export const stopAlarmSound = (): void => {
+  isAlarmActive = false;
+  if (activeAlarmInterval) {
+    clearInterval(activeAlarmInterval);
+    activeAlarmInterval = null;
+  }
+  // إيقاف الاهتزاز
+  if ('vibrate' in navigator) {
+    navigator.vibrate(0);
+  }
+};
+
+// تشغيل نغمة واحدة
+const playAlarmTone = async (): Promise<void> => {
   try {
     const ctx = getAudioContext();
     
-    // Resume audio context if suspended (required by browsers)
     if (ctx.state === 'suspended') {
       await ctx.resume();
     }
 
-    // تشغيل الصوت 3 مرات للتأكد من سماعه
-    for (let repeat = 0; repeat < 3; repeat++) {
-      const startTime = ctx.currentTime + (repeat * 0.6);
+    const now = ctx.currentTime;
+
+    // نغمة صاعدة قوية
+    for (let i = 0; i < 3; i++) {
+      const startTime = now + (i * 0.2);
       
-      // النغمة الأولى - عالية
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.frequency.setValueAtTime(1200, startTime);
-      gain1.gain.setValueAtTime(1.0, startTime); // صوت أقوى
-      gain1.gain.exponentialRampToValueAtTime(0.3, startTime + 0.15);
-      osc1.start(startTime);
-      osc1.stop(startTime + 0.15);
-
-      // النغمة الثانية - أعلى
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.frequency.setValueAtTime(1600, startTime + 0.15);
-      gain2.gain.setValueAtTime(1.0, startTime + 0.15);
-      gain2.gain.exponentialRampToValueAtTime(0.3, startTime + 0.3);
-      osc2.start(startTime + 0.15);
-      osc2.stop(startTime + 0.3);
-
-      // النغمة الثالثة - الأعلى
-      const osc3 = ctx.createOscillator();
-      const gain3 = ctx.createGain();
-      osc3.connect(gain3);
-      gain3.connect(ctx.destination);
-      osc3.frequency.setValueAtTime(2000, startTime + 0.3);
-      gain3.gain.setValueAtTime(1.0, startTime + 0.3);
-      gain3.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
-      osc3.start(startTime + 0.3);
-      osc3.stop(startTime + 0.5);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.frequency.setValueAtTime(800 + (i * 400), startTime);
+      gain.gain.setValueAtTime(1.0, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.1, startTime + 0.15);
+      
+      osc.start(startTime);
+      osc.stop(startTime + 0.15);
     }
 
-    // تفعيل الاهتزاز للجوال (نمط قوي ومتكرر)
+    // اهتزاز قوي
     if ('vibrate' in navigator) {
-      navigator.vibrate([300, 100, 300, 100, 300, 100, 500, 200, 500]);
+      navigator.vibrate([200, 100, 200, 100, 300]);
     }
   } catch (error) {
-    console.warn('Could not play notification sound:', error);
+    console.warn('Could not play alarm tone:', error);
   }
+};
+
+// تشغيل صوت إنذار مستمر حتى التفاعل
+export const startAlarmSound = (): void => {
+  if (isAlarmActive) return;
+  if (!getNotificationSoundEnabled()) return;
+  
+  isAlarmActive = true;
+  
+  // تشغيل الصوت فوراً
+  playAlarmTone();
+  
+  // تكرار الصوت كل ثانية
+  activeAlarmInterval = window.setInterval(() => {
+    if (isAlarmActive) {
+      playAlarmTone();
+    } else {
+      stopAlarmSound();
+    }
+  }, 1000);
+};
+
+// Play notification sound once (للإشعارات العادية)
+export const playNotificationSound = async (): Promise<void> => {
+  if (!getNotificationSoundEnabled()) return;
+  await playAlarmTone();
 };
 
 export const isNotificationSupported = (): boolean => {
@@ -96,7 +115,7 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
 
 export const showNotification = async (
   title: string, 
-  options?: NotificationOptions & { vibrate?: number[]; actions?: { action: string; title: string }[] }
+  options?: NotificationOptions & { vibrate?: number[]; actions?: { action: string; title: string }[]; persistent?: boolean }
 ): Promise<boolean> => {
   if (!isNotificationSupported()) {
     console.warn('Notifications not supported');
@@ -109,8 +128,12 @@ export const showNotification = async (
   }
 
   try {
-    // Play sound when notification is shown
-    await playNotificationSound();
+    // تشغيل صوت مستمر للإشعارات المهمة
+    if (options?.persistent) {
+      startAlarmSound();
+    } else {
+      await playNotificationSound();
+    }
     
     // Try using Service Worker for persistent notifications
     const registration = await navigator.serviceWorker.ready;
@@ -119,18 +142,30 @@ export const showNotification = async (
       badge: '/icons/icon-96x96.png',
       dir: 'rtl',
       lang: 'ar',
+      requireInteraction: true,
       ...options,
     } as NotificationOptions);
     return true;
   } catch (error) {
     // Fallback to regular notification
     try {
-      new Notification(title, {
+      const notification = new Notification(title, {
         icon: '/icons/icon-192x192.png',
         dir: 'rtl',
         lang: 'ar',
+        requireInteraction: true,
         ...options,
       });
+      
+      // إيقاف الصوت عند إغلاق الإشعار
+      notification.onclick = () => {
+        stopAlarmSound();
+        notification.close();
+      };
+      notification.onclose = () => {
+        stopAlarmSound();
+      };
+      
       return true;
     } catch (fallbackError) {
       console.error('Error showing notification:', fallbackError);
@@ -170,6 +205,7 @@ export const scheduleExitReminder = (
         body: `تبقى ${diff} دقائق على وقت الانصراف`,
         tag: 'exit-reminder',
         requireInteraction: true,
+        persistent: true, // صوت مستمر
       });
     }
 
@@ -183,6 +219,7 @@ export const scheduleExitReminder = (
         body: `مضت ${exitReminderMinutes} دقائق على وقت الانصراف المتوقع`,
         tag: 'exit-confirm',
         requireInteraction: true,
+        persistent: true, // صوت مستمر
       });
       onReminder();
     }

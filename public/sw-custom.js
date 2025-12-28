@@ -5,18 +5,27 @@ self.addEventListener('notificationclick', (event) => {
 
   const action = event.action;
   
+  // إرسال رسالة لإيقاف صوت الإنذار
+  const stopAlarmAndNotify = (clients, messageType) => {
+    clients.forEach((client) => {
+      client.postMessage({
+        type: 'STOP_ALARM',
+      });
+      if (messageType) {
+        client.postMessage({
+          type: 'NOTIFICATION_ACTION',
+          action: messageType,
+        });
+      }
+    });
+  };
+  
   if (action === 'yes') {
-    // User confirmed they checked out - broadcast message to app
+    // User confirmed they checked out
     event.waitUntil(
       self.clients.matchAll({ type: 'window' }).then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({
-            type: 'NOTIFICATION_ACTION',
-            action: 'checkout-confirmed',
-          });
-        });
+        stopAlarmAndNotify(clients, 'checkout-confirmed');
         
-        // Focus or open the app
         if (clients.length > 0) {
           clients[0].focus();
         } else {
@@ -25,9 +34,11 @@ self.addEventListener('notificationclick', (event) => {
       })
     );
   } else if (action === 'no') {
-    // User hasn't checked out - open app to remind them
+    // User hasn't checked out
     event.waitUntil(
       self.clients.matchAll({ type: 'window' }).then((clients) => {
+        stopAlarmAndNotify(clients, null);
+        
         if (clients.length > 0) {
           clients[0].focus();
         } else {
@@ -36,9 +47,11 @@ self.addEventListener('notificationclick', (event) => {
       })
     );
   } else {
-    // Default click - open app
+    // Default click
     event.waitUntil(
       self.clients.matchAll({ type: 'window' }).then((clients) => {
+        stopAlarmAndNotify(clients, null);
+        
         if (clients.length > 0) {
           clients[0].focus();
         } else {
@@ -47,6 +60,19 @@ self.addEventListener('notificationclick', (event) => {
       })
     );
   }
+});
+
+// إيقاف الإنذار عند إغلاق الإشعار
+self.addEventListener('notificationclose', (event) => {
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window' }).then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'STOP_ALARM',
+        });
+      });
+    })
+  );
 });
 
 // Handle push events (for future server-side push)
