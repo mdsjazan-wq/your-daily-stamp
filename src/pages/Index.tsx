@@ -413,14 +413,27 @@ const Index = () => {
 
     const entryTime = formatTime(now);
     
-    // إذا كان الحضور الساعة 7 صباحاً أو قبلها، يكون الخروج الساعة 3 عصراً
+    // حساب وقت الخروج المتوقع مع مراعاة نهاية الدوام المرن (5 عصراً)
     let expectedExitTime: string;
+    const maxExitMinutes = 17 * 60; // 5:00 PM - نهاية الدوام المرن
+    
     if (totalMinutes <= minTime) {
+      // إذا كان الحضور الساعة 7 صباحاً أو قبلها، يكون الخروج الساعة 3 عصراً
       const exitDate = new Date();
       exitDate.setHours(15, 0, 0, 0);
       expectedExitTime = formatTime(exitDate);
     } else {
-      expectedExitTime = addHoursToTime(entryTime, 8);
+      // حساب وقت الخروج بإضافة 8 ساعات
+      const calculatedExitMinutes = totalMinutes + (8 * 60);
+      
+      // التأكد من عدم تجاوز الخامسة عصراً
+      if (calculatedExitMinutes > maxExitMinutes) {
+        const exitDate = new Date();
+        exitDate.setHours(17, 0, 0, 0);
+        expectedExitTime = formatTime(exitDate);
+      } else {
+        expectedExitTime = addHoursToTime(entryTime, 8);
+      }
     }
 
     const newTodayData: TodayData = {
