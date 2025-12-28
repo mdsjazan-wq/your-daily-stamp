@@ -134,9 +134,7 @@ const Index = () => {
       const dayOfWeek = today.getDay(); // 0 = الأحد, 5 = الجمعة, 6 = السبت
 
       const savedRecords = localStorage.getItem("attendanceRecords");
-      if (savedRecords) {
-        setRecords(JSON.parse(savedRecords));
-      }
+      let localRecords: AttendanceRecord[] = savedRecords ? JSON.parse(savedRecords) : [];
 
       // في أيام الإجازة الأسبوعية لا نعرض/نحفظ حالة اليوم
       if (dayOfWeek === 5 || dayOfWeek === 6) {
@@ -148,10 +146,18 @@ const Index = () => {
           expectedExitTime: null,
           status: null,
         });
+        setRecords(localRecords);
         return;
       }
 
+      // تحميل/تصحيح بيانات اليوم
       const savedToday = localStorage.getItem(`today_${todayKey}`);
+      let nextTodayData: TodayData = {
+        entryTime: null,
+        expectedExitTime: null,
+        status: null,
+      };
+
       if (savedToday) {
         const parsed: TodayData = JSON.parse(savedToday);
 
@@ -161,31 +167,38 @@ const Index = () => {
 
         if (parsed.entryTime && expectedIsInvalid) {
           const expectedExitTime = addHoursToTime(parsed.entryTime, 8);
-          setTodayData({
+          nextTodayData = {
             entryTime: parsed.entryTime,
             expectedExitTime,
             status: parsed.status,
-          });
-          // تحديث التخزين لتجنب استمرار المشكلة
-          localStorage.setItem(
-            `today_${todayKey}`,
-            JSON.stringify({
-              entryTime: parsed.entryTime,
-              expectedExitTime,
-              status: parsed.status,
-            })
-          );
+          };
+          localStorage.setItem(`today_${todayKey}`, JSON.stringify(nextTodayData));
         } else {
-          setTodayData(parsed);
+          nextTodayData = parsed;
         }
-      } else {
-        // إذا لم يوجد بيانات اليوم، نعيد تعيين الحالة
-        setTodayData({
-          entryTime: null,
-          expectedExitTime: null,
-          status: null,
-        });
       }
+
+      // ضمان ظهور سجل اليوم حتى لو كانت البيانات قديمة قبل إضافة حفظ السجل عند تسجيل الدخول
+      if (nextTodayData.entryTime && nextTodayData.expectedExitTime && nextTodayData.status) {
+        const hasTodayRecord = localRecords.some((r) => r.date === todayKey);
+        if (!hasTodayRecord) {
+          localRecords = [
+            {
+              date: todayKey,
+              entryTime: nextTodayData.entryTime,
+              expectedExitTime: nextTodayData.expectedExitTime,
+              actualExitTime: null,
+              status: nextTodayData.status,
+              exitStatus: null,
+            },
+            ...localRecords,
+          ];
+          localStorage.setItem("attendanceRecords", JSON.stringify(localRecords));
+        }
+      }
+
+      setTodayData(nextTodayData);
+      setRecords(localRecords);
 
       const reminderKey = `reminder_${todayKey}`;
       if (localStorage.getItem(reminderKey)) {
