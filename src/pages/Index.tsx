@@ -53,40 +53,61 @@ const getDateKey = (date: Date): string => {
   return date.toISOString().split("T")[0];
 };
 
+const normalizeArabicNumerals = (input: string): string => {
+  // تحويل الأرقام العربية/الهندية إلى أرقام إنجليزية لتسهيل التحويل إلى Number
+  const map: Record<string, string> = {
+    "٠": "0",
+    "١": "1",
+    "٢": "2",
+    "٣": "3",
+    "٤": "4",
+    "٥": "5",
+    "٦": "6",
+    "٧": "7",
+    "٨": "8",
+    "٩": "9",
+  };
+  return input.replace(/[٠-٩]/g, (d) => map[d] ?? d);
+};
+
 const parseTimeToMinutes = (timeStr: string): number => {
-  const date = new Date();
-  const [time, period] = timeStr.split(" ");
+  const parts = timeStr.trim().split(/\s+/);
+  if (parts.length < 2) return NaN;
+
+  const time = normalizeArabicNumerals(parts[0]);
+  const period = parts[1];
   const [hours, minutes] = time.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return NaN;
+
   let h = hours;
   if (period === "م" && hours !== 12) h += 12;
   if (period === "ص" && hours === 12) h = 0;
   return h * 60 + minutes;
 };
 
-const addHoursToTime = (timeStr: string, hours: number): string => {
+const addHoursToTime = (timeStr: string, hoursToAdd: number): string => {
   const result = new Date();
-  // تحليل الوقت بشكل أفضل - التعامل مع المسافات المختلفة
+
   const parts = timeStr.trim().split(/\s+/);
   if (parts.length < 2) {
-    // إذا فشل التحليل، نستخدم الوقت الحالي + الساعات المطلوبة
-    result.setHours(result.getHours() + hours);
+    result.setHours(result.getHours() + hoursToAdd);
     return formatTime(result);
   }
-  
-  const time = parts[0];
+
+  const time = normalizeArabicNumerals(parts[0]);
   const period = parts[1];
   const [h, m] = time.split(":").map(Number);
-  
-  if (isNaN(h) || isNaN(m)) {
-    result.setHours(result.getHours() + hours);
+
+  if (Number.isNaN(h) || Number.isNaN(m)) {
+    result.setHours(result.getHours() + hoursToAdd);
     return formatTime(result);
   }
-  
+
   let hour = h;
   if (period === "م" && h !== 12) hour += 12;
   if (period === "ص" && h === 12) hour = 0;
-  
-  result.setHours(hour + hours, m, 0, 0);
+
+  result.setHours(hour + hoursToAdd, m, 0, 0);
   return formatTime(result);
 };
 
@@ -132,7 +153,31 @@ const Index = () => {
 
       const savedToday = localStorage.getItem(`today_${todayKey}`);
       if (savedToday) {
-        setTodayData(JSON.parse(savedToday));
+        const parsed: TodayData = JSON.parse(savedToday);
+
+        // إصلاح بيانات قديمة كانت تُحفظ كـ "Invalid Date" بسبب اختلاف شكل الأرقام
+        const expectedIsInvalid =
+          !parsed.expectedExitTime || parsed.expectedExitTime === "Invalid Date";
+
+        if (parsed.entryTime && expectedIsInvalid) {
+          const expectedExitTime = addHoursToTime(parsed.entryTime, 8);
+          setTodayData({
+            entryTime: parsed.entryTime,
+            expectedExitTime,
+            status: parsed.status,
+          });
+          // تحديث التخزين لتجنب استمرار المشكلة
+          localStorage.setItem(
+            `today_${todayKey}`,
+            JSON.stringify({
+              entryTime: parsed.entryTime,
+              expectedExitTime,
+              status: parsed.status,
+            })
+          );
+        } else {
+          setTodayData(parsed);
+        }
       } else {
         // إذا لم يوجد بيانات اليوم، نعيد تعيين الحالة
         setTodayData({
