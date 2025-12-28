@@ -43,6 +43,12 @@ const Settings = () => {
     return saved ? JSON.parse(saved) : [];
   });
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
+  const [editTimes, setEditTimes] = useState<{ entryTime24: string; actualExitTime24: string }>(
+    {
+      entryTime24: "",
+      actualExitTime24: "",
+    }
+  );
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRecord, setNewRecord] = useState({
     date: "",
@@ -54,7 +60,9 @@ const Settings = () => {
   const [overtimeEnabled, setOvertimeEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
+  const [notificationPermission, setNotificationPermission] = useState<
+    NotificationPermission | "unsupported"
+  >("default");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -62,12 +70,12 @@ const Settings = () => {
     if (saved) {
       setReminderMinutes(parseInt(saved, 10));
     }
-    
+
     const exitReminderSaved = localStorage.getItem("exitReminderMinutes");
     if (exitReminderSaved) {
       setExitReminderMinutes(parseInt(exitReminderSaved, 10));
     }
-    
+
     const overtimeSaved = localStorage.getItem("overtimeEnabled");
     if (overtimeSaved !== null) {
       setOvertimeEnabled(overtimeSaved === "true");
@@ -91,13 +99,13 @@ const Settings = () => {
       const permission = await requestNotificationPermission();
       setNotificationPermission(permission);
 
-      if (permission === 'granted') {
+      if (permission === "granted") {
         setNotificationsEnabled(true);
         saveNotificationSettings(true);
         toast.success("تم تفعيل الإشعارات", {
           description: "ستتلقى إشعارات تذكيرية بوقت الانصراف",
         });
-      } else if (permission === 'denied') {
+      } else if (permission === "denied") {
         toast.error("تم رفض الإذن", {
           description: "يرجى السماح بالإشعارات من إعدادات المتصفح",
         });
@@ -120,6 +128,49 @@ const Settings = () => {
     setRecords(newRecords);
   };
 
+  const normalizeArabicNumerals = (input: string): string => {
+    const map: Record<string, string> = {
+      "٠": "0",
+      "١": "1",
+      "٢": "2",
+      "٣": "3",
+      "٤": "4",
+      "٥": "5",
+      "٦": "6",
+      "٧": "7",
+      "٨": "8",
+      "٩": "9",
+    };
+    return input.replace(/[٠-٩]/g, (d) => map[d] ?? d);
+  };
+
+  const arabicTimeTo24 = (timeStr: string): string | null => {
+    const raw = normalizeArabicNumerals(timeStr).trim();
+
+    // Already 24h (HH:MM)
+    if (/^\d{1,2}:\d{2}$/.test(raw) && !raw.includes(" ")) {
+      const [h, m] = raw.split(":");
+      return `${h.padStart(2, "0")}:${m}`;
+    }
+
+    // Arabic with period: "7:05 ص" / "3:00 م"
+    const parts = raw.split(/\s+/);
+    if (parts.length < 2) return null;
+    const time = parts[0];
+    const period = parts[1];
+
+    const [hh, mm] = time.split(":").map((n) => Number(n));
+    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+
+    let h = hh;
+    if (period === "م" && hh !== 12) h += 12;
+    if (period === "ص" && hh === 12) h = 0;
+
+    return `${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+  };
+
+  const isValidTime24 = (value: string) => /^\d{2}:\d{2}$/.test(value);
+
   const formatTimeToArabic = (time24: string): string => {
     const [hours, minutes] = time24.split(":").map(Number);
     const period = hours >= 12 ? "م" : "ص";
@@ -131,14 +182,16 @@ const Settings = () => {
     const [hours, minutes] = entryTime.split(":").map(Number);
     const totalMinutes = hours * 60 + minutes;
     const minTime = 7 * 60; // 7:00 AM
-    
+
     // إذا كان الحضور الساعة 7 صباحاً أو قبلها، يكون الخروج الساعة 3 عصراً
     if (totalMinutes <= minTime) {
       return "15:00";
     }
-    
+
     const exitHours = (hours + 8) % 24;
-    return `${exitHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+    return `${exitHours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const determineStatus = (entryTime: string): "منتظم" | "متأخر" => {
@@ -147,13 +200,27 @@ const Settings = () => {
     return totalMinutes > 9 * 60 ? "متأخر" : "منتظم";
   };
 
-  const determineExitStatus = (expectedExit: string, actualExit: string): "خروج نظامي" | "خروج مبكر" => {
+  const determineExitStatus = (
+    expectedExit: string,
+    actualExit: string
+  ): "خروج نظامي" | "خروج مبكر" => {
     const [expH, expM] = expectedExit.split(":").map(Number);
     const [actH, actM] = actualExit.split(":").map(Number);
     const expMinutes = expH * 60 + expM;
     const actMinutes = actH * 60 + actM;
     return actMinutes < expMinutes - 5 ? "خروج مبكر" : "خروج نظامي";
   };
+
+  // Sync edit form fields when selecting a record
+  useEffect(() => {
+    if (!editingRecord) return;
+    setEditTimes({
+      entryTime24: arabicTimeTo24(editingRecord.entryTime) ?? "",
+      actualExitTime24: editingRecord.actualExitTime
+        ? arabicTimeTo24(editingRecord.actualExitTime) ?? ""
+        : "",
+    });
+  }, [editingRecord]);
 
   const handleAddRecord = () => {
     if (!newRecord.date || !newRecord.entryTime) {
@@ -216,10 +283,54 @@ const Settings = () => {
   const handleUpdateRecord = () => {
     if (!editingRecord) return;
 
-    const updatedRecords = records.map((r) =>
-      r.date === editingRecord.date ? editingRecord : r
-    );
+    if (!isValidTime24(editTimes.entryTime24)) {
+      toast.error("وقت دخول غير صالح", {
+        description: "اختر وقت الدخول بصيغة صحيحة (HH:MM)",
+      });
+      return;
+    }
+
+    if (editTimes.actualExitTime24 && !isValidTime24(editTimes.actualExitTime24)) {
+      toast.error("وقت خروج غير صالح", {
+        description: "اختر وقت الخروج بصيغة صحيحة (HH:MM)",
+      });
+      return;
+    }
+
+    const expectedExit24 = calculateExpectedExit(editTimes.entryTime24);
+    const status = determineStatus(editTimes.entryTime24);
+    const exitStatus = editTimes.actualExitTime24
+      ? determineExitStatus(expectedExit24, editTimes.actualExitTime24)
+      : null;
+
+    const updatedRecord: AttendanceRecord = {
+      ...editingRecord,
+      entryTime: formatTimeToArabic(editTimes.entryTime24),
+      expectedExitTime: formatTimeToArabic(expectedExit24),
+      actualExitTime: editTimes.actualExitTime24
+        ? formatTimeToArabic(editTimes.actualExitTime24)
+        : null,
+      status,
+      exitStatus,
+    };
+
+    const updatedRecords = records.map((r) => (r.date === updatedRecord.date ? updatedRecord : r));
     saveRecords(updatedRecords);
+
+    // إذا كان هذا سجل اليوم الحالي، نحدّث بيانات اليوم في الصفحة الرئيسية أيضاً
+    const todayKey = new Date().toISOString().split("T")[0];
+    if (updatedRecord.date === todayKey) {
+      localStorage.setItem(
+        `today_${todayKey}`,
+        JSON.stringify({
+          entryTime: updatedRecord.entryTime,
+          expectedExitTime: updatedRecord.expectedExitTime,
+          status: updatedRecord.status,
+        })
+      );
+      window.dispatchEvent(new CustomEvent("todayDataCleared"));
+    }
+
     setEditingRecord(null);
     toast.success("تم تحديث السجل بنجاح");
   };
@@ -598,18 +709,40 @@ const Settings = () => {
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">وقت الدخول</label>
                 <input
-                  type="text"
-                  value={editingRecord.entryTime}
-                  onChange={(e) => setEditingRecord({ ...editingRecord, entryTime: e.target.value })}
+                  type="time"
+                  value={editTimes.entryTime24}
+                  onChange={(e) =>
+                    setEditTimes((prev) => ({ ...prev, entryTime24: e.target.value }))
+                  }
                   className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">وقت الخروج المتوقع</label>
+                <input
+                  type="text"
+                  value={
+                    isValidTime24(editTimes.entryTime24)
+                      ? formatTimeToArabic(calculateExpectedExit(editTimes.entryTime24))
+                      : ""
+                  }
+                  disabled
+                  className="w-full p-3 bg-muted/50 rounded-xl border border-border text-muted-foreground"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">وقت الخروج</label>
                 <input
-                  type="text"
-                  value={editingRecord.actualExitTime || ""}
-                  onChange={(e) => setEditingRecord({ ...editingRecord, actualExitTime: e.target.value || null })}
+                  type="time"
+                  value={editTimes.actualExitTime24}
+                  onChange={(e) =>
+                    setEditTimes((prev) => ({
+                      ...prev,
+                      actualExitTime24: e.target.value,
+                    }))
+                  }
                   className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
                 />
               </div>
