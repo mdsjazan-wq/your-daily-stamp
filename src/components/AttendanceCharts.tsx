@@ -31,9 +31,29 @@ const FLEXIBLE_START = 7 * 60;
 const FLEXIBLE_END = 9 * 60;
 const WORK_HOURS = 8;
 
+const normalizeArabicNumerals = (input: string): string => {
+  const map: Record<string, string> = {
+    "٠": "0",
+    "١": "1",
+    "٢": "2",
+    "٣": "3",
+    "٤": "4",
+    "٥": "5",
+    "٦": "6",
+    "٧": "7",
+    "٨": "8",
+    "٩": "9",
+  };
+  return input.replace(/[٠-٩]/g, (d) => map[d] ?? d);
+};
+
 const parseTimeToMinutes = (timeStr: string): number => {
-  const [time, period] = timeStr.split(" ");
+  const parts = timeStr.trim().split(/\s+/);
+  if (parts.length < 2) return NaN;
+  const time = normalizeArabicNumerals(parts[0]);
+  const period = parts[1];
   const [hours, minutes] = time.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return NaN;
   let h = hours;
   if (period === "م" && hours !== 12) h += 12;
   if (period === "ص" && hours === 12) h = 0;
