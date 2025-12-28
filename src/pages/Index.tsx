@@ -64,15 +64,30 @@ const parseTimeToMinutes = (timeStr: string): number => {
 };
 
 const addHoursToTime = (timeStr: string, hours: number): string => {
-  const now = new Date();
-  const [time, period] = timeStr.split(" ");
+  const result = new Date();
+  // تحليل الوقت بشكل أفضل - التعامل مع المسافات المختلفة
+  const parts = timeStr.trim().split(/\s+/);
+  if (parts.length < 2) {
+    // إذا فشل التحليل، نستخدم الوقت الحالي + الساعات المطلوبة
+    result.setHours(result.getHours() + hours);
+    return formatTime(result);
+  }
+  
+  const time = parts[0];
+  const period = parts[1];
   const [h, m] = time.split(":").map(Number);
+  
+  if (isNaN(h) || isNaN(m)) {
+    result.setHours(result.getHours() + hours);
+    return formatTime(result);
+  }
+  
   let hour = h;
   if (period === "م" && h !== 12) hour += 12;
   if (period === "ص" && h === 12) hour = 0;
   
-  now.setHours(hour + hours, m, 0, 0);
-  return formatTime(now);
+  result.setHours(hour + hours, m, 0, 0);
+  return formatTime(result);
 };
 
 const Index = () => {
@@ -357,6 +372,28 @@ const Index = () => {
     };
 
     saveTodayData(newTodayData);
+
+    // حفظ السجل مباشرة عند تسجيل الدخول
+    const todayKey = getDateKey(new Date());
+    const existingRecordIndex = records.findIndex((r) => r.date === todayKey);
+    
+    const newRecord: AttendanceRecord = {
+      date: todayKey,
+      entryTime,
+      expectedExitTime,
+      actualExitTime: null,
+      status,
+      exitStatus: null,
+    };
+
+    let updatedRecords: AttendanceRecord[];
+    if (existingRecordIndex >= 0) {
+      updatedRecords = [...records];
+      updatedRecords[existingRecordIndex] = newRecord;
+    } else {
+      updatedRecords = [newRecord, ...records];
+    }
+    saveRecords(updatedRecords);
 
     toast.success("تم تسجيل الدخول بنجاح", {
       description: `وقت الدخول: ${entryTime}`,
