@@ -149,7 +149,7 @@ const BalanceWarningBanner = () => {
             <p className={`text-sm font-semibold ${
               isNegative ? "text-destructive" : "text-warning"
             }`}>
-              {isNegative ? "نفد رصيد الاستئذان!" : "تحذير: رصيد منخفض"}
+              {isNegative ? "نفد رصيد الاستئذان!" : "رصيد ساعات الاستئذان منخفض"}
             </p>
             <p className="text-xs text-muted-foreground">
               {isNegative 
