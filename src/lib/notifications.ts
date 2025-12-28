@@ -10,7 +10,7 @@ const getAudioContext = (): AudioContext => {
   return audioContext;
 };
 
-// Play notification sound
+// Play notification sound - صوت قوي ومتكرر للتنبيه
 export const playNotificationSound = async (): Promise<void> => {
   if (!getNotificationSoundEnabled()) return;
   
@@ -22,21 +22,48 @@ export const playNotificationSound = async (): Promise<void> => {
       await ctx.resume();
     }
 
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    
-    // Create a pleasant notification sound (two-tone chime)
-    oscillator.frequency.setValueAtTime(880, ctx.currentTime); // A5
-    oscillator.frequency.setValueAtTime(1108.73, ctx.currentTime + 0.15); // C#6
-    
-    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-    
-    oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + 0.4);
+    // تشغيل الصوت 3 مرات للتأكد من سماعه
+    for (let repeat = 0; repeat < 3; repeat++) {
+      const startTime = ctx.currentTime + (repeat * 0.6);
+      
+      // النغمة الأولى - عالية
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.frequency.setValueAtTime(1200, startTime);
+      gain1.gain.setValueAtTime(1.0, startTime); // صوت أقوى
+      gain1.gain.exponentialRampToValueAtTime(0.3, startTime + 0.15);
+      osc1.start(startTime);
+      osc1.stop(startTime + 0.15);
+
+      // النغمة الثانية - أعلى
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.frequency.setValueAtTime(1600, startTime + 0.15);
+      gain2.gain.setValueAtTime(1.0, startTime + 0.15);
+      gain2.gain.exponentialRampToValueAtTime(0.3, startTime + 0.3);
+      osc2.start(startTime + 0.15);
+      osc2.stop(startTime + 0.3);
+
+      // النغمة الثالثة - الأعلى
+      const osc3 = ctx.createOscillator();
+      const gain3 = ctx.createGain();
+      osc3.connect(gain3);
+      gain3.connect(ctx.destination);
+      osc3.frequency.setValueAtTime(2000, startTime + 0.3);
+      gain3.gain.setValueAtTime(1.0, startTime + 0.3);
+      gain3.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+      osc3.start(startTime + 0.3);
+      osc3.stop(startTime + 0.5);
+    }
+
+    // تفعيل الاهتزاز للجوال (نمط قوي ومتكرر)
+    if ('vibrate' in navigator) {
+      navigator.vibrate([300, 100, 300, 100, 300, 100, 500, 200, 500]);
+    }
   } catch (error) {
     console.warn('Could not play notification sound:', error);
   }
