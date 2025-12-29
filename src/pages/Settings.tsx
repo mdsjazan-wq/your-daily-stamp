@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell, AlertTriangle, Calculator, Info, RefreshCw, BellRing } from "lucide-react";
+import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell, AlertTriangle, Calculator, Info, RefreshCw, BellRing, Settings2, FileText } from "lucide-react";
 import { APP_VERSION, APP_BUILD_ID, APP_NAME } from "@/lib/version";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   isNotificationSupported,
   getNotificationPermission,
@@ -454,487 +455,512 @@ const Settings = () => {
           >
             <ArrowRight className="w-6 h-6" />
           </Link>
-          <h1 className="text-xl font-bold">إعدادات السجلات</h1>
+          <h1 className="text-xl font-bold">الإعدادات</h1>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 py-6 space-y-6">
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center justify-center gap-2 p-4 bg-primary text-primary-foreground rounded-2xl font-semibold hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            إضافة سجل
-          </button>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center justify-center gap-2 p-4 bg-secondary text-secondary-foreground rounded-2xl font-semibold hover:bg-secondary/80 transition-colors"
-          >
-            <Upload className="w-5 h-5" />
-            استيراد ملف
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,.txt"
-            onChange={handleFileImport}
-            className="hidden"
-          />
-        </div>
+      <main className="max-w-md mx-auto px-4 py-4">
+        <Tabs defaultValue="settings" className="w-full" dir="rtl">
+          <TabsList className="grid w-full grid-cols-3 mb-4 h-12">
+            <TabsTrigger value="settings" className="flex items-center gap-1.5 text-sm">
+              <Settings2 className="w-4 h-4" />
+              الإعدادات
+            </TabsTrigger>
+            <TabsTrigger value="records" className="flex items-center gap-1.5 text-sm">
+              <FileText className="w-4 h-4" />
+              السجلات
+            </TabsTrigger>
+            <TabsTrigger value="info" className="flex items-center gap-1.5 text-sm">
+              <Info className="w-4 h-4" />
+              التطبيق
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Add Form - يظهر مباشرة تحت الأزرار */}
-        {showAddForm && (
-          <div className="bg-card rounded-3xl shadow-card p-6 animate-scale-in">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-foreground">إضافة سجل جديد</h2>
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="p-2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">التاريخ</label>
-                <input
-                  type="date"
-                  value={newRecord.date}
-                  onChange={(e) => setNewRecord({ ...newRecord, date: e.target.value })}
-                  className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
-                />
+          {/* تبويب الإعدادات */}
+          <TabsContent value="settings" className="space-y-4 mt-0">
+            {/* Reminder Settings */}
+            <div className="bg-card rounded-3xl shadow-card p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Bell className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-bold text-foreground">إعدادات التنبيه</h2>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">وقت الدخول</label>
-                <input
-                  type="time"
-                  value={newRecord.entryTime}
-                  onChange={(e) => setNewRecord({ ...newRecord, entryTime: e.target.value })}
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  التنبيه قبل الانصراف بـ (دقيقة)
+                </label>
+                <select
+                  value={reminderMinutes}
+                  onChange={(e) => handleReminderChange(parseInt(e.target.value, 10))}
                   className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
-                />
+                >
+                  <option value={5}>5 دقائق</option>
+                  <option value={10}>10 دقائق</option>
+                  <option value={15}>15 دقيقة</option>
+                  <option value={20}>20 دقيقة</option>
+                  <option value={30}>30 دقيقة</option>
+                  <option value={45}>45 دقيقة</option>
+                  <option value={60}>ساعة</option>
+                </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">وقت الخروج (اختياري)</label>
-                <input
-                  type="time"
-                  value={newRecord.actualExitTime}
-                  onChange={(e) => setNewRecord({ ...newRecord, actualExitTime: e.target.value })}
-                  className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
-                />
-              </div>
-              <button
-                onClick={handleAddRecord}
-                className="w-full flex items-center justify-center gap-2 p-3 gradient-success text-success-foreground rounded-xl font-semibold"
-              >
-                <Save className="w-5 h-5" />
-                حفظ السجل
-              </button>
-            </div>
-          </div>
-        )}
 
-        {/* Reminder Settings */}
-        <div className="bg-card rounded-3xl shadow-card p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Bell className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-foreground">إعدادات التنبيه</h2>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              التنبيه قبل الانصراف بـ (دقيقة)
-            </label>
-            <select
-              value={reminderMinutes}
-              onChange={(e) => handleReminderChange(parseInt(e.target.value, 10))}
-              className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
-            >
-              <option value={5}>5 دقائق</option>
-              <option value={10}>10 دقائق</option>
-              <option value={15}>15 دقيقة</option>
-              <option value={20}>20 دقيقة</option>
-              <option value={30}>30 دقيقة</option>
-              <option value={45}>45 دقيقة</option>
-              <option value={60}>ساعة</option>
-            </select>
-          </div>
-
-          {/* Exit Reminder Minutes Setting */}
-          <div className="mt-4 pt-4 border-t border-border">
-            <label className="block text-sm font-medium text-foreground mb-2">
-              تنبيه نسيان بصمة الخروج بعد (دقيقة)
-            </label>
-            <p className="text-xs text-muted-foreground mb-2">
-              سيتم تنبيهك إذا لم تسجل الخروج بعد مرور هذه المدة من وقت الانصراف المتوقع
-            </p>
-            <select
-              value={exitReminderMinutes}
-              onChange={(e) => {
-                const value = parseInt(e.target.value, 10);
-                setExitReminderMinutes(value);
-                localStorage.setItem("exitReminderMinutes", value.toString());
-                toast.success(`تم تغيير وقت تنبيه نسيان الخروج إلى ${value} دقائق`);
-              }}
-              className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
-            >
-              <option value={3}>3 دقائق</option>
-              <option value={5}>5 دقائق</option>
-              <option value={10}>10 دقائق</option>
-              <option value={15}>15 دقيقة</option>
-              <option value={20}>20 دقيقة</option>
-              <option value={30}>30 دقيقة</option>
-            </select>
-          </div>
-
-          {/* Push Notifications Setting */}
-          <div className="mt-4 pt-4 border-t border-border">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <BellRing className="w-4 h-4 text-primary" />
-                  <p className="text-sm font-medium text-foreground">إشعارات Push</p>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  تلقي إشعارات حتى عندما يكون التطبيق مغلقاً
+              {/* Exit Reminder Minutes Setting */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  تنبيه نسيان بصمة الخروج بعد (دقيقة)
+                </label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  سيتم تنبيهك إذا لم تسجل الخروج بعد مرور هذه المدة من وقت الانصراف المتوقع
                 </p>
-                {notificationPermission === 'denied' && (
-                  <p className="text-xs text-destructive mt-1">
-                    تم رفض الإذن. يرجى السماح من إعدادات المتصفح
-                  </p>
+                <select
+                  value={exitReminderMinutes}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value, 10);
+                    setExitReminderMinutes(value);
+                    localStorage.setItem("exitReminderMinutes", value.toString());
+                    toast.success(`تم تغيير وقت تنبيه نسيان الخروج إلى ${value} دقائق`);
+                  }}
+                  className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
+                >
+                  <option value={3}>3 دقائق</option>
+                  <option value={5}>5 دقائق</option>
+                  <option value={10}>10 دقائق</option>
+                  <option value={15}>15 دقيقة</option>
+                  <option value={20}>20 دقيقة</option>
+                  <option value={30}>30 دقيقة</option>
+                </select>
+              </div>
+
+              {/* Push Notifications Setting */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <BellRing className="w-4 h-4 text-primary" />
+                      <p className="text-sm font-medium text-foreground">إشعارات Push</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      تلقي إشعارات حتى عندما يكون التطبيق مغلقاً
+                    </p>
+                    {notificationPermission === 'denied' && (
+                      <p className="text-xs text-destructive mt-1">
+                        تم رفض الإذن. يرجى السماح من إعدادات المتصفح
+                      </p>
+                    )}
+                    {notificationPermission === 'unsupported' && (
+                      <p className="text-xs text-warning mt-1">
+                        الإشعارات غير مدعومة في هذا المتصفح
+                      </p>
+                    )}
+                  </div>
+                  <Switch
+                    checked={notificationsEnabled}
+                    onCheckedChange={handleNotificationToggle}
+                    disabled={notificationPermission === 'unsupported' || notificationPermission === 'denied'}
+                  />
+                </div>
+                
+                {/* Notification Sound Toggle */}
+                {notificationsEnabled && (
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">صوت التنبيه</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        تشغيل صوت عند وصول الإشعارات
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notificationSoundEnabled}
+                      onCheckedChange={(checked) => {
+                        setNotificationSoundEnabled(checked);
+                        saveNotificationSoundEnabled(checked);
+                        if (checked) {
+                          playNotificationSound();
+                          toast.success("تم تفعيل صوت التنبيه");
+                        } else {
+                          toast.success("تم تعطيل صوت التنبيه");
+                        }
+                      }}
+                    />
+                  </div>
                 )}
-                {notificationPermission === 'unsupported' && (
-                  <p className="text-xs text-warning mt-1">
-                    الإشعارات غير مدعومة في هذا المتصفح
-                  </p>
+                
+                {/* Test Notification Button */}
+                {notificationsEnabled && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 w-full"
+                    onClick={async () => {
+                      const sent = await showNotification('إشعار تجريبي 🔔', {
+                        body: 'الإشعارات تعمل بشكل صحيح!',
+                        tag: 'test-notification',
+                      });
+                      if (sent) {
+                        toast.success("تم إرسال الإشعار التجريبي");
+                      } else {
+                        toast.error("فشل إرسال الإشعار");
+                      }
+                    }}
+                  >
+                    <BellRing className="w-4 h-4 ml-2" />
+                    إرسال إشعار تجريبي
+                  </Button>
                 )}
               </div>
-              <Switch
-                checked={notificationsEnabled}
-                onCheckedChange={handleNotificationToggle}
-                disabled={notificationPermission === 'unsupported' || notificationPermission === 'denied'}
-              />
             </div>
-            
-            {/* Notification Sound Toggle */}
-            {notificationsEnabled && (
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+
+            {/* Calculation Settings */}
+            <div className="bg-card rounded-3xl shadow-card p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Calculator className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-bold text-foreground">إعدادات الحساب</h2>
+              </div>
+              <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">صوت التنبيه</p>
+                  <p className="text-sm font-medium text-foreground">حساب الساعات الإضافية</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    تشغيل صوت عند وصول الإشعارات
+                    عند التفعيل، تُضاف ساعات البقاء بعد وقت الانصراف لرصيد الاستئذان
                   </p>
                 </div>
                 <Switch
-                  checked={notificationSoundEnabled}
+                  checked={overtimeEnabled}
                   onCheckedChange={(checked) => {
-                    setNotificationSoundEnabled(checked);
-                    saveNotificationSoundEnabled(checked);
-                    if (checked) {
-                      playNotificationSound();
-                      toast.success("تم تفعيل صوت التنبيه");
-                    } else {
-                      toast.success("تم تعطيل صوت التنبيه");
-                    }
+                    setOvertimeEnabled(checked);
+                    localStorage.setItem("overtimeEnabled", checked.toString());
+                    toast.success(checked ? "تم تفعيل حساب الساعات الإضافية" : "تم تعطيل حساب الساعات الإضافية");
                   }}
                 />
               </div>
-            )}
-            
-            {/* Test Notification Button */}
-            {notificationsEnabled && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3 w-full"
-                onClick={async () => {
-                  const sent = await showNotification('إشعار تجريبي 🔔', {
-                    body: 'الإشعارات تعمل بشكل صحيح!',
-                    tag: 'test-notification',
-                  });
-                  if (sent) {
-                    toast.success("تم إرسال الإشعار التجريبي");
-                  } else {
-                    toast.error("فشل إرسال الإشعار");
-                  }
-                }}
-              >
-                <BellRing className="w-4 h-4 ml-2" />
-                إرسال إشعار تجريبي
-              </Button>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Calculation Settings */}
-        <div className="bg-card rounded-3xl shadow-card p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Calculator className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-foreground">إعدادات الحساب</h2>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">حساب الساعات الإضافية</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                عند التفعيل، تُضاف ساعات البقاء بعد وقت الانصراف لرصيد الاستئذان
+            {/* Beacon Settings */}
+            <BeaconSettings />
+          </TabsContent>
+
+          {/* تبويب السجلات */}
+          <TabsContent value="records" className="space-y-4 mt-0">
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="flex items-center justify-center gap-2 p-4 bg-primary text-primary-foreground rounded-2xl font-semibold hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                إضافة سجل
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center justify-center gap-2 p-4 bg-secondary text-secondary-foreground rounded-2xl font-semibold hover:bg-secondary/80 transition-colors"
+              >
+                <Upload className="w-5 h-5" />
+                استيراد ملف
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.txt"
+                onChange={handleFileImport}
+                className="hidden"
+              />
+            </div>
+
+            {/* Add Form */}
+            {showAddForm && (
+              <div className="bg-card rounded-3xl shadow-card p-6 animate-scale-in">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold text-foreground">إضافة سجل جديد</h2>
+                  <button
+                    onClick={() => setShowAddForm(false)}
+                    className="p-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">التاريخ</label>
+                    <input
+                      type="date"
+                      value={newRecord.date}
+                      onChange={(e) => setNewRecord({ ...newRecord, date: e.target.value })}
+                      className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">وقت الدخول</label>
+                    <input
+                      type="time"
+                      value={newRecord.entryTime}
+                      onChange={(e) => setNewRecord({ ...newRecord, entryTime: e.target.value })}
+                      className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">وقت الخروج (اختياري)</label>
+                    <input
+                      type="time"
+                      value={newRecord.actualExitTime}
+                      onChange={(e) => setNewRecord({ ...newRecord, actualExitTime: e.target.value })}
+                      className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
+                    />
+                  </div>
+                  <button
+                    onClick={handleAddRecord}
+                    className="w-full flex items-center justify-center gap-2 p-3 gradient-success text-success-foreground rounded-xl font-semibold"
+                  >
+                    <Save className="w-5 h-5" />
+                    حفظ السجل
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Form */}
+            {editingRecord && (
+              <div className="bg-card rounded-3xl shadow-card p-6 animate-scale-in">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold text-foreground">تعديل السجل</h2>
+                  <button
+                    onClick={() => setEditingRecord(null)}
+                    className="p-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">التاريخ</label>
+                    <input
+                      type="text"
+                      value={editingRecord.date}
+                      disabled
+                      className="w-full p-3 bg-muted/50 rounded-xl border border-border text-muted-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">وقت الدخول</label>
+                    <input
+                      type="time"
+                      value={editTimes.entryTime24}
+                      onChange={(e) =>
+                        setEditTimes((prev) => ({ ...prev, entryTime24: e.target.value }))
+                      }
+                      className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">وقت الخروج المتوقع</label>
+                    <input
+                      type="text"
+                      value={
+                        isValidTime24(editTimes.entryTime24)
+                          ? formatTimeToArabic(calculateExpectedExit(editTimes.entryTime24))
+                          : ""
+                      }
+                      disabled
+                      className="w-full p-3 bg-muted/50 rounded-xl border border-border text-muted-foreground"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">وقت الخروج</label>
+                    <input
+                      type="time"
+                      value={editTimes.actualExitTime24}
+                      onChange={(e) =>
+                        setEditTimes((prev) => ({
+                          ...prev,
+                          actualExitTime24: e.target.value,
+                        }))
+                      }
+                      className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
+                    />
+                  </div>
+                  <button
+                    onClick={handleUpdateRecord}
+                    className="w-full flex items-center justify-center gap-2 p-3 gradient-primary text-primary-foreground rounded-xl font-semibold"
+                  >
+                    <Save className="w-5 h-5" />
+                    حفظ التعديلات
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Records List */}
+            <div className="bg-card rounded-3xl shadow-card p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-foreground">السجلات ({records.length})</h2>
+                {records.length > 0 && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button className="flex items-center gap-1 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-xl transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                        حذف الكل
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="max-w-sm">
+                      <AlertDialogHeader>
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="w-5 h-5 text-destructive" />
+                          <AlertDialogTitle>تأكيد حذف جميع السجلات</AlertDialogTitle>
+                        </div>
+                        <AlertDialogDescription>
+                          هل أنت متأكد من حذف جميع السجلات ({records.length} سجل)؟ لا يمكن التراجع عن هذا الإجراء.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="gap-2">
+                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteAllRecords}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          حذف الكل
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+              
+              {records.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">لا توجد سجلات</p>
+              ) : (
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+                  {records.map((record) => (
+                    <div
+                      key={record.date}
+                      className="p-4 bg-muted/30 rounded-2xl border border-border/50"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-foreground">
+                          {new Date(record.date).toLocaleDateString("en-GB", {
+                            weekday: "short",
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setEditingRecord(record)}
+                            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRecord(record.date)}
+                            className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                        <div>
+                          <span className="block text-foreground/60">الدخول</span>
+                          <span className="font-medium text-foreground">{record.entryTime}</span>
+                        </div>
+                        <div>
+                          <span className="block text-foreground/60">المتوقع</span>
+                          <span className="font-medium text-foreground">{record.expectedExitTime}</span>
+                        </div>
+                        <div>
+                          <span className="block text-foreground/60">الفعلي</span>
+                          <span className="font-medium text-foreground">{record.actualExitTime || "---"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Import Instructions */}
+            <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4">
+              <h3 className="text-sm font-semibold text-primary mb-2">تنسيق ملف الاستيراد (CSV)</h3>
+              <p className="text-xs text-muted-foreground">
+                التاريخ,وقت_الدخول,وقت_الخروج<br />
+                2024-01-15,08:30,16:30<br />
+                2024-01-16,07:45,15:45
               </p>
             </div>
-            <Switch
-              checked={overtimeEnabled}
-              onCheckedChange={(checked) => {
-                setOvertimeEnabled(checked);
-                localStorage.setItem("overtimeEnabled", checked.toString());
-                toast.success(checked ? "تم تفعيل حساب الساعات الإضافية" : "تم تعطيل حساب الساعات الإضافية");
-              }}
-            />
-          </div>
-        </div>
+          </TabsContent>
 
-        {/* Beacon Settings */}
-        <BeaconSettings />
-
-        {/* Import Instructions */}
-        <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4">
-          <h3 className="text-sm font-semibold text-primary mb-2">تنسيق ملف الاستيراد (CSV)</h3>
-          <p className="text-xs text-muted-foreground">
-            التاريخ,وقت_الدخول,وقت_الخروج<br />
-            2024-01-15,08:30,16:30<br />
-            2024-01-16,07:45,15:45
-          </p>
-        </div>
-
-        {/* Edit Form */}
-        {editingRecord && (
-          <div className="bg-card rounded-3xl shadow-card p-6 animate-scale-in">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-foreground">تعديل السجل</h2>
-              <button
-                onClick={() => setEditingRecord(null)}
-                className="p-2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">التاريخ</label>
-                <input
-                  type="text"
-                  value={editingRecord.date}
-                  disabled
-                  className="w-full p-3 bg-muted/50 rounded-xl border border-border text-muted-foreground"
-                />
+          {/* تبويب معلومات التطبيق */}
+          <TabsContent value="info" className="space-y-4 mt-0">
+            <div className="bg-card rounded-3xl shadow-card p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Info className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-bold text-foreground">معلومات التطبيق</h2>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">وقت الدخول</label>
-                <input
-                  type="time"
-                  value={editTimes.entryTime24}
-                  onChange={(e) =>
-                    setEditTimes((prev) => ({ ...prev, entryTime24: e.target.value }))
-                  }
-                  className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">وقت الخروج المتوقع</label>
-                <input
-                  type="text"
-                  value={
-                    isValidTime24(editTimes.entryTime24)
-                      ? formatTimeToArabic(calculateExpectedExit(editTimes.entryTime24))
-                      : ""
-                  }
-                  disabled
-                  className="w-full p-3 bg-muted/50 rounded-xl border border-border text-muted-foreground"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">وقت الخروج</label>
-                <input
-                  type="time"
-                  value={editTimes.actualExitTime24}
-                  onChange={(e) =>
-                    setEditTimes((prev) => ({
-                      ...prev,
-                      actualExitTime24: e.target.value,
-                    }))
-                  }
-                  className="w-full p-3 bg-muted rounded-xl border border-border focus:ring-2 focus:ring-primary outline-none"
-                />
-              </div>
-              <button
-                onClick={handleUpdateRecord}
-                className="w-full flex items-center justify-center gap-2 p-3 gradient-primary text-primary-foreground rounded-xl font-semibold"
-              >
-                <Save className="w-5 h-5" />
-                حفظ التعديلات
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Records List */}
-        <div className="bg-card rounded-3xl shadow-card p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-foreground">السجلات ({records.length})</h2>
-            {records.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button className="flex items-center gap-1 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-xl transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                    حذف الكل
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="max-w-sm">
-                  <AlertDialogHeader>
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-destructive" />
-                      <AlertDialogTitle>تأكيد حذف جميع السجلات</AlertDialogTitle>
-                    </div>
-                    <AlertDialogDescription>
-                      هل أنت متأكد من حذف جميع السجلات ({records.length} سجل)؟ لا يمكن التراجع عن هذا الإجراء.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter className="gap-2">
-                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDeleteAllRecords}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      حذف الكل
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
-          
-          {records.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">لا توجد سجلات</p>
-          ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {records.map((record) => (
-                <div
-                  key={record.date}
-                  className="p-4 bg-muted/30 rounded-2xl border border-border/50"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-foreground">
-                      {new Date(record.date).toLocaleDateString("en-GB", {
-                        weekday: "short",
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setEditingRecord(record)}
-                        className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteRecord(record.date)}
-                        className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-                    <div>
-                      <span className="block text-foreground/60">الدخول</span>
-                      <span className="font-medium text-foreground">{record.entryTime}</span>
-                    </div>
-                    <div>
-                      <span className="block text-foreground/60">المتوقع</span>
-                      <span className="font-medium text-foreground">{record.expectedExitTime}</span>
-                    </div>
-                    <div>
-                      <span className="block text-foreground/60">الفعلي</span>
-                      <span className="font-medium text-foreground">{record.actualExitTime || "---"}</span>
-                    </div>
-                  </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-border/50">
+                  <span className="text-sm text-muted-foreground">اسم التطبيق</span>
+                  <span className="text-sm font-semibold text-foreground">{APP_NAME} – نظام الدوام المرن</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <div className="flex items-center justify-between py-2 border-b border-border/50">
+                  <span className="text-sm text-muted-foreground">رقم الإصدار</span>
+                  <span className="text-sm font-mono font-semibold text-primary">{APP_VERSION}</span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-muted-foreground">معرف البناء</span>
+                  <span className="text-sm font-mono font-medium text-muted-foreground">{APP_BUILD_ID}</span>
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      toast.info("جاري تحديث التطبيق...");
 
-        {/* App Info */}
-        <div className="bg-card rounded-3xl shadow-card p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Info className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-foreground">معلومات التطبيق</h2>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-b border-border/50">
-              <span className="text-sm text-muted-foreground">اسم التطبيق</span>
-              <span className="text-sm font-semibold text-foreground">{APP_NAME} – نظام الدوام المرن</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-border/50">
-              <span className="text-sm text-muted-foreground">رقم الإصدار</span>
-              <span className="text-sm font-mono font-semibold text-primary">{APP_VERSION}</span>
-            </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">معرف البناء</span>
-              <span className="text-sm font-mono font-medium text-muted-foreground">{APP_BUILD_ID}</span>
-            </div>
-            <button
-              onClick={async () => {
-                try {
-                  toast.info("جاري تحديث التطبيق...");
+                      // إلغاء تسجيل جميع Service Workers
+                      if ("serviceWorker" in navigator) {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        for (const registration of registrations) {
+                          await registration.unregister();
+                        }
+                      }
 
-                  // إلغاء تسجيل جميع Service Workers
-                  if ("serviceWorker" in navigator) {
-                    const registrations = await navigator.serviceWorker.getRegistrations();
-                    for (const registration of registrations) {
-                      await registration.unregister();
+                      // مسح caches فقط (localStorage لن يتأثر)
+                      if ("caches" in window) {
+                        const cacheNames = await caches.keys();
+                        for (const cacheName of cacheNames) {
+                          await caches.delete(cacheName);
+                        }
+                      }
+
+                      toast.success("تم مسح الملفات المؤقتة، جاري إعادة التحميل...");
+
+                      // إعادة تحميل مع كسر كاش المتصفح (بدون لمس السجلات)
+                      setTimeout(() => {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set("v", Date.now().toString());
+                        window.location.replace(url.toString());
+                      }, 800);
+                    } catch (error) {
+                      toast.error("حدث خطأ أثناء التحديث");
+                      console.error("Update error:", error);
                     }
-                  }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 p-3 mt-2 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  تحديث التطبيق الآن
+                </button>
+              </div>
+            </div>
 
-                  // مسح caches فقط (localStorage لن يتأثر)
-                  if ("caches" in window) {
-                    const cacheNames = await caches.keys();
-                    for (const cacheName of cacheNames) {
-                      await caches.delete(cacheName);
-                    }
-                  }
-
-                  toast.success("تم مسح الملفات المؤقتة، جاري إعادة التحميل...");
-
-                  // إعادة تحميل مع كسر كاش المتصفح (بدون لمس السجلات)
-                  setTimeout(() => {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set("v", Date.now().toString());
-                    window.location.replace(url.toString());
-                  }, 800);
-                } catch (error) {
-                  toast.error("حدث خطأ أثناء التحديث");
-                  console.error("Update error:", error);
-                }
-              }}
-              className="w-full flex items-center justify-center gap-2 p-3 mt-2 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              تحديث التطبيق الآن
-            </button>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <footer className="text-center py-4 space-y-1">
-          <p className="text-xs text-muted-foreground">
-            نظام بصمتي للدوام المرن © 2026
-          </p>
-          <p className="text-xs text-muted-foreground/70">
-            تصميم: علي حريصي
-          </p>
-        </footer>
+            {/* Footer */}
+            <footer className="text-center py-4 space-y-1">
+              <p className="text-xs text-muted-foreground">
+                نظام بصمتي للدوام المرن © 2026
+              </p>
+              <p className="text-xs text-muted-foreground/70">
+                تصميم: علي حريصي
+              </p>
+            </footer>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
