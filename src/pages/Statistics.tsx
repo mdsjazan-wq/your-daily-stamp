@@ -17,9 +17,30 @@ const FLEXIBLE_START = 7 * 60; // 7:00 AM
 const FLEXIBLE_END = 9 * 60; // 9:00 AM
 const WORK_HOURS = 8; // 8 ساعات عمل
 
+const normalizeArabicNumerals = (input: string): string => {
+  const map: Record<string, string> = {
+    "٠": "0",
+    "١": "1",
+    "٢": "2",
+    "٣": "3",
+    "٤": "4",
+    "٥": "5",
+    "٦": "6",
+    "٧": "7",
+    "٨": "8",
+    "٩": "9",
+  };
+  return input.replace(/[٠-٩]/g, (d) => map[d] ?? d);
+};
+
 const parseTimeToMinutes = (timeStr: string): number => {
-  const [time, period] = timeStr.split(" ");
+  if (!timeStr) return 0;
+  const parts = timeStr.trim().split(/\s+/);
+  if (parts.length < 2) return 0;
+  const time = normalizeArabicNumerals(parts[0]);
+  const period = parts[1];
   const [hours, minutes] = time.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return 0;
   let h = hours;
   if (period === "م" && hours !== 12) h += 12;
   if (period === "ص" && hours === 12) h = 0;

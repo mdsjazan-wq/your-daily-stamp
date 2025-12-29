@@ -276,6 +276,21 @@ const Settings = () => {
 
     updatedRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     saveRecords(updatedRecords);
+
+    // إذا كان هذا سجل اليوم الحالي، نحدّث بيانات اليوم في الصفحة الرئيسية أيضاً
+    const todayKey = new Date().toISOString().split("T")[0];
+    if (newRecord.date === todayKey) {
+      localStorage.setItem(
+        `today_${todayKey}`,
+        JSON.stringify({
+          entryTime: record.entryTime,
+          expectedExitTime: record.expectedExitTime,
+          status: record.status,
+        })
+      );
+      window.dispatchEvent(new CustomEvent("todayDataCleared"));
+    }
+
     setNewRecord({ date: "", entryTime: "", actualExitTime: "" });
     setShowAddForm(false);
     toast.success("تم إضافة السجل بنجاح");
