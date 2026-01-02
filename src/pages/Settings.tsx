@@ -68,25 +68,32 @@ const Settings = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("reminderMinutes");
-    if (saved) {
-      setReminderMinutes(parseInt(saved, 10));
-    }
+    const loadSettings = async () => {
+      const saved = localStorage.getItem("reminderMinutes");
+      if (saved) {
+        setReminderMinutes(parseInt(saved, 10));
+      }
 
-    const exitReminderSaved = localStorage.getItem("exitReminderMinutes");
-    if (exitReminderSaved) {
-      setExitReminderMinutes(parseInt(exitReminderSaved, 10));
-    }
+      const exitReminderSaved = localStorage.getItem("exitReminderMinutes");
+      if (exitReminderSaved) {
+        setExitReminderMinutes(parseInt(exitReminderSaved, 10));
+      }
 
-    const overtimeSaved = localStorage.getItem("overtimeEnabled");
-    if (overtimeSaved !== null) {
-      setOvertimeEnabled(overtimeSaved === "true");
-    }
+      const overtimeSaved = localStorage.getItem("overtimeEnabled");
+      if (overtimeSaved !== null) {
+        setOvertimeEnabled(overtimeSaved === "true");
+      }
 
-    // Load notification settings
-    setNotificationsEnabled(getNotificationSettings());
-    setNotificationSoundEnabled(getNotificationSoundEnabled());
-    setNotificationPermission(getNotificationPermission());
+      // Load notification settings
+      setNotificationsEnabled(getNotificationSettings());
+      setNotificationSoundEnabled(getNotificationSoundEnabled());
+      
+      // Get notification permission (async now)
+      const permission = await getNotificationPermission();
+      setNotificationPermission(permission);
+    };
+    
+    loadSettings();
   }, []);
 
   const handleNotificationToggle = async (enabled: boolean) => {

@@ -1,13 +1,23 @@
 // Notification Service for Push Notifications
+// Uses Native Notifications for Capacitor, Web Notifications for PWA
+
+import {
+  isNativePlatform,
+  isNotificationsSupported as isNativeNotificationsSupported,
+  requestNotificationPermission as requestNativePermission,
+  getNotificationPermissionStatus,
+  showNotification as showNativeNotification,
+  scheduleNotification as scheduleNativeNotification,
+  initializeNotifications,
+} from './nativeNotifications';
 
 // Notification sound using Web Audio API
 let audioContext: AudioContext | null = null;
 let activeAlarmInterval: number | null = null;
 let isAlarmActive = false;
-
 const getAudioContext = (): AudioContext => {
   if (!audioContext) {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
   }
   return audioContext;
 };
@@ -89,13 +99,19 @@ export const playNotificationSound = async (): Promise<void> => {
 };
 
 export const isNotificationSupported = (): boolean => {
-  return 'Notification' in window && 'serviceWorker' in navigator;
+  return isNativeNotificationsSupported();
 };
 
-export const getNotificationPermission = (): NotificationPermission | 'unsupported' => {
+export const getNotificationPermission = async (): Promise<NotificationPermission | 'unsupported'> => {
   if (!isNotificationSupported()) {
     return 'unsupported';
   }
+  
+  if (isNativePlatform()) {
+    const status = await getNotificationPermissionStatus();
+    return status as NotificationPermission;
+  }
+  
   return Notification.permission;
 };
 
@@ -105,8 +121,11 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
   }
   
   try {
-    const permission = await Notification.requestPermission();
-    return permission;
+    // Initialize notifications first
+    await initializeNotifications();
+    
+    const permission = await requestNativePermission();
+    return permission as NotificationPermission;
   } catch (error) {
     console.error('Error requesting notification permission:', error);
     return 'denied';
