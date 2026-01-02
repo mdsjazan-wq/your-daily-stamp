@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ArrowRight, Edit3, Plus, Upload, Trash2, Save, X, Bell, AlertTriangle, Calculator, Info, RefreshCw, BellRing, Settings2, FileText } from "lucide-react";
-import { getAppVersion, saveAppVersion, APP_BUILD_ID, APP_NAME } from "@/lib/version";
+import { APP_VERSION, APP_BUILD_ID, APP_NAME } from "@/lib/version";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
@@ -65,9 +65,6 @@ const Settings = () => {
   const [notificationPermission, setNotificationPermission] = useState<
     NotificationPermission | "unsupported"
   >("default");
-  const [appVersion, setAppVersion] = useState(getAppVersion());
-  const [isEditingVersion, setIsEditingVersion] = useState(false);
-  const [tempVersion, setTempVersion] = useState(appVersion);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -912,51 +909,7 @@ const Settings = () => {
                 </div>
                 <div className="flex items-center justify-between py-2 border-b border-border/50">
                   <span className="text-sm text-muted-foreground">رقم الإصدار</span>
-                  {isEditingVersion ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={tempVersion}
-                        onChange={(e) => setTempVersion(e.target.value)}
-                        className="w-24 px-2 py-1 text-sm font-mono bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-center"
-                        dir="ltr"
-                        placeholder="1.0.0"
-                      />
-                      <button
-                        onClick={() => {
-                          saveAppVersion(tempVersion);
-                          setAppVersion(tempVersion);
-                          setIsEditingVersion(false);
-                          toast.success("تم حفظ رقم الإصدار");
-                        }}
-                        className="p-1 text-green-600 hover:bg-green-100 rounded"
-                      >
-                        <Save className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setTempVersion(appVersion);
-                          setIsEditingVersion(false);
-                        }}
-                        className="p-1 text-destructive hover:bg-destructive/10 rounded"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono font-semibold text-primary">{appVersion}</span>
-                      <button
-                        onClick={() => {
-                          setTempVersion(appVersion);
-                          setIsEditingVersion(true);
-                        }}
-                        className="p-1 text-muted-foreground hover:text-primary hover:bg-muted rounded"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
+                  <span className="text-sm font-mono font-semibold text-primary">{APP_VERSION}</span>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm text-muted-foreground">معرف البناء</span>
