@@ -3,8 +3,6 @@
  * Uses Capacitor BLE Plugin for native apps, Web Bluetooth for PWA
  */
 
-import { BleClient, ScanResult } from '@capacitor-community/bluetooth-le';
-
 // Check if running in Capacitor native app
 export const isNativePlatform = (): boolean => {
   return typeof window !== 'undefined' && 
@@ -24,6 +22,7 @@ export const isBleSupported = (): boolean => {
 export const initializeBle = async (): Promise<boolean> => {
   if (isNativePlatform()) {
     try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
       await BleClient.initialize();
       return true;
     } catch (error) {
@@ -38,6 +37,7 @@ export const initializeBle = async (): Promise<boolean> => {
 export const requestBlePermissions = async (): Promise<boolean> => {
   if (isNativePlatform()) {
     try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
       await BleClient.requestLEScan({}, () => {});
       await BleClient.stopLEScan();
       return true;
@@ -53,6 +53,7 @@ export const requestBlePermissions = async (): Promise<boolean> => {
 export const isBluetoothEnabled = async (): Promise<boolean> => {
   if (isNativePlatform()) {
     try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
       const enabled = await BleClient.isEnabled();
       return enabled;
     } catch {
@@ -66,6 +67,7 @@ export const isBluetoothEnabled = async (): Promise<boolean> => {
 export const requestEnableBluetooth = async (): Promise<boolean> => {
   if (isNativePlatform()) {
     try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
       await BleClient.requestEnable();
       return true;
     } catch {
@@ -92,9 +94,11 @@ export const scanForDevices = async (
 
   if (isNativePlatform()) {
     try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
+      
       await BleClient.requestLEScan(
         {},
-        (result: ScanResult) => {
+        (result) => {
           const device: BleDevice = {
             deviceId: result.device.deviceId,
             name: result.device.name || result.localName,
@@ -149,6 +153,7 @@ export const scanForDevices = async (
 export const stopScan = async (): Promise<void> => {
   if (isNativePlatform()) {
     try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
       await BleClient.stopLEScan();
     } catch (error) {
       console.error('Error stopping scan:', error);
@@ -160,6 +165,7 @@ export const stopScan = async (): Promise<void> => {
 export const connectToDevice = async (deviceId: string): Promise<boolean> => {
   if (isNativePlatform()) {
     try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
       await BleClient.connect(deviceId);
       return true;
     } catch (error) {
@@ -174,6 +180,7 @@ export const connectToDevice = async (deviceId: string): Promise<boolean> => {
 export const disconnectFromDevice = async (deviceId: string): Promise<void> => {
   if (isNativePlatform()) {
     try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
       await BleClient.disconnect(deviceId);
     } catch (error) {
       console.error('Disconnect error:', error);
@@ -185,6 +192,7 @@ export const disconnectFromDevice = async (deviceId: string): Promise<void> => {
 export const getDeviceRssi = async (deviceId: string): Promise<number | null> => {
   if (isNativePlatform()) {
     try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
       const rssi = await BleClient.readRssi(deviceId);
       return rssi;
     } catch {

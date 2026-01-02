@@ -3,8 +3,6 @@
  * Uses Capacitor Local Notifications for native apps, Web Notifications for PWA
  */
 
-import { LocalNotifications, ScheduleOptions, LocalNotificationSchema } from '@capacitor/local-notifications';
-
 // Check if running in Capacitor native app
 export const isNativePlatform = (): boolean => {
   return typeof window !== 'undefined' && 
@@ -24,7 +22,7 @@ export const isNotificationsSupported = (): boolean => {
 export const initializeNotifications = async (): Promise<boolean> => {
   if (isNativePlatform()) {
     try {
-      // Check permissions
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
       const permResult = await LocalNotifications.checkPermissions();
       return permResult.display === 'granted';
     } catch (error) {
@@ -39,6 +37,7 @@ export const initializeNotifications = async (): Promise<boolean> => {
 export const requestNotificationPermission = async (): Promise<'granted' | 'denied' | 'prompt'> => {
   if (isNativePlatform()) {
     try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
       const result = await LocalNotifications.requestPermissions();
       return result.display as 'granted' | 'denied' | 'prompt';
     } catch (error) {
@@ -64,6 +63,7 @@ export const requestNotificationPermission = async (): Promise<'granted' | 'deni
 export const getNotificationPermissionStatus = async (): Promise<'granted' | 'denied' | 'prompt'> => {
   if (isNativePlatform()) {
     try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
       const result = await LocalNotifications.checkPermissions();
       return result.display as 'granted' | 'denied' | 'prompt';
     } catch {
@@ -99,20 +99,20 @@ export const showNotification = async (options: NotificationOptions): Promise<bo
 
   if (isNativePlatform()) {
     try {
-      const notification: LocalNotificationSchema = {
-        id: notificationId,
-        title: options.title,
-        body: options.body,
-        smallIcon: options.smallIcon || 'ic_stat_icon',
-        largeIcon: options.largeIcon,
-        sound: options.sound,
-        ongoing: options.ongoing || false,
-        autoCancel: options.autoCancel !== false,
-        group: options.group,
-      };
-
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
+      
       await LocalNotifications.schedule({
-        notifications: [notification],
+        notifications: [{
+          id: notificationId,
+          title: options.title,
+          body: options.body,
+          smallIcon: options.smallIcon || 'ic_stat_icon',
+          largeIcon: options.largeIcon,
+          sound: options.sound,
+          ongoing: options.ongoing || false,
+          autoCancel: options.autoCancel !== false,
+          group: options.group,
+        }],
       });
       return true;
     } catch (error) {
@@ -163,24 +163,22 @@ export const scheduleNotification = async (
 
   if (isNativePlatform()) {
     try {
-      const scheduleOptions: ScheduleOptions = {
-        notifications: [
-          {
-            id: notificationId,
-            title: options.title,
-            body: options.body,
-            smallIcon: options.smallIcon || 'ic_stat_icon',
-            schedule: {
-              at: scheduleAt,
-              allowWhileIdle: true,
-            },
-            sound: options.sound,
-            autoCancel: options.autoCancel !== false,
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
+      
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: notificationId,
+          title: options.title,
+          body: options.body,
+          smallIcon: options.smallIcon || 'ic_stat_icon',
+          schedule: {
+            at: scheduleAt,
+            allowWhileIdle: true,
           },
-        ],
-      };
-
-      await LocalNotifications.schedule(scheduleOptions);
+          sound: options.sound,
+          autoCancel: options.autoCancel !== false,
+        }],
+      });
       return true;
     } catch (error) {
       console.error('Failed to schedule notification:', error);
@@ -203,6 +201,7 @@ export const scheduleNotification = async (
 export const cancelNotification = async (notificationId: number): Promise<void> => {
   if (isNativePlatform()) {
     try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
       await LocalNotifications.cancel({ notifications: [{ id: notificationId }] });
     } catch (error) {
       console.error('Failed to cancel notification:', error);
@@ -214,6 +213,7 @@ export const cancelNotification = async (notificationId: number): Promise<void> 
 export const cancelAllNotifications = async (): Promise<void> => {
   if (isNativePlatform()) {
     try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
       const pending = await LocalNotifications.getPending();
       if (pending.notifications.length > 0) {
         await LocalNotifications.cancel({ notifications: pending.notifications });
@@ -228,6 +228,7 @@ export const cancelAllNotifications = async (): Promise<void> => {
 export const getPendingNotifications = async (): Promise<{ id: number; title?: string }[]> => {
   if (isNativePlatform()) {
     try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
       const pending = await LocalNotifications.getPending();
       return pending.notifications.map(n => ({ id: n.id, title: n.title }));
     } catch {
@@ -238,19 +239,29 @@ export const getPendingNotifications = async (): Promise<{ id: number; title?: s
 };
 
 // Register action listeners for notifications
-export const registerNotificationListeners = (
+export const registerNotificationListeners = async (
   onAction: (actionId: string, notificationId: number) => void
-): void => {
+): Promise<void> => {
   if (isNativePlatform()) {
-    LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
-      onAction(notification.actionId, notification.notification.id);
-    });
+    try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
+      LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+        onAction(notification.actionId, notification.notification.id);
+      });
+    } catch (error) {
+      console.error('Failed to register notification listeners:', error);
+    }
   }
 };
 
 // Remove all listeners
 export const removeNotificationListeners = async (): Promise<void> => {
   if (isNativePlatform()) {
-    await LocalNotifications.removeAllListeners();
+    try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
+      await LocalNotifications.removeAllListeners();
+    } catch (error) {
+      console.error('Failed to remove notification listeners:', error);
+    }
   }
 };
