@@ -10,8 +10,10 @@ import {
   isCapacitorApp,
   scanForBeacons,
   registerBeaconAttendance,
+  initializeBluetooth,
   BeaconConfig,
 } from '@/lib/beaconService';
+import { BleDevice } from '@/lib/nativeBleService';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,10 +38,25 @@ const BeaconSettings = () => {
   const [bluetoothSupported, setBluetoothSupported] = useState(false);
   const [isNativeApp, setIsNativeApp] = useState(false);
   const [connectedDevice, setConnectedDevice] = useState<ConnectedDeviceInfo | null>(null);
+  const [bleInitialized, setBleInitialized] = useState(false);
 
   useEffect(() => {
-    setBluetoothSupported(isWebBluetoothSupported());
-    setIsNativeApp(isCapacitorApp());
+    const initBle = async () => {
+      const isNative = isCapacitorApp();
+      setIsNativeApp(isNative);
+      
+      if (isNative) {
+        // Initialize native BLE
+        const initialized = await initializeBluetooth();
+        setBleInitialized(initialized);
+        setBluetoothSupported(initialized);
+      } else {
+        setBluetoothSupported(isWebBluetoothSupported());
+        setBleInitialized(true);
+      }
+    };
+    
+    initBle();
   }, []);
 
   const handleConfigChange = (updates: Partial<BeaconConfig>) => {
@@ -51,7 +68,7 @@ const BeaconSettings = () => {
   const handleScanBeacon = async () => {
     if (!bluetoothSupported) {
       toast.error('البلوتوث غير مدعوم', {
-        description: 'هذا المتصفح لا يدعم Web Bluetooth API',
+        description: isNativeApp ? 'يرجى تفعيل البلوتوث' : 'هذا المتصفح لا يدعم Web Bluetooth API',
       });
       return;
     }
@@ -60,7 +77,11 @@ const BeaconSettings = () => {
     try {
       const device = await scanForBeacons();
       if (device) {
-        setConnectedDevice(device);
+        // Map BleDevice to ConnectedDeviceInfo
+        setConnectedDevice({
+          id: device.deviceId,
+          name: device.name,
+        });
         handleConfigChange({
           name: device.name || 'جهاز Beacon',
           enabled: true,
@@ -106,19 +127,23 @@ const BeaconSettings = () => {
           {bluetoothSupported ? (
             <>
               <Bluetooth className="w-4 h-4 text-primary" />
-              <span className="text-foreground">Web Bluetooth مدعوم</span>
+              <span className="text-foreground">
+                {isNativeApp ? 'Bluetooth BLE مدعوم (Native)' : 'Web Bluetooth مدعوم'}
+              </span>
             </>
           ) : (
             <>
               <BluetoothOff className="w-4 h-4 text-destructive" />
-              <span className="text-muted-foreground">Web Bluetooth غير مدعوم</span>
+              <span className="text-muted-foreground">
+                {isNativeApp ? 'يرجى تفعيل البلوتوث' : 'Web Bluetooth غير مدعوم'}
+              </span>
             </>
           )}
         </div>
         {isNativeApp && (
           <div className="flex items-center gap-2 text-sm mt-2">
             <CheckCircle2 className="w-4 h-4 text-green-500" />
-            <span className="text-foreground">يعمل كتطبيق Native</span>
+            <span className="text-foreground">يعمل كتطبيق Native - جميع الميزات متاحة</span>
           </div>
         )}
         {!isNativeApp && bluetoothSupported && (

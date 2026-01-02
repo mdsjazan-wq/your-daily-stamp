@@ -5,6 +5,12 @@ const config: CapacitorConfig = {
   appName: 'your-daily-stamp',
   webDir: 'dist',
   plugins: {
+    // Local Notifications configuration
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon',
+      iconColor: '#1e4a7a',
+      sound: 'notification.wav',
+    },
     // Bluetooth and location permissions for beacon detection
     Permissions: {
       permissions: [

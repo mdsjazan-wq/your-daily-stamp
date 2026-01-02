@@ -1,36 +1,18 @@
 /**
  * Beacon Service for BC04P-MultiBeacon integration
- * Uses Web Bluetooth API for PWA compatibility
- * For full native support, Capacitor plugins would be needed
+ * Uses Native BLE for Capacitor apps, Web Bluetooth for PWA
  */
 
-// Web Bluetooth API types (not all browsers support this)
-interface BluetoothDevice {
-  id: string;
-  name?: string;
-  gatt?: BluetoothRemoteGATTServer;
-}
-
-interface BluetoothRemoteGATTServer {
-  connected: boolean;
-  device: BluetoothDevice;
-  connect(): Promise<BluetoothRemoteGATTServer>;
-  disconnect(): void;
-}
-
-interface Bluetooth {
-  requestDevice(options: {
-    acceptAllDevices?: boolean;
-    filters?: Array<{ services?: string[]; name?: string; namePrefix?: string }>;
-    optionalServices?: string[];
-  }): Promise<BluetoothDevice>;
-}
-
-declare global {
-  interface Navigator {
-    bluetooth?: Bluetooth;
-  }
-}
+import {
+  isNativePlatform,
+  isBleSupported,
+  initializeBle,
+  scanForDevices,
+  stopScan,
+  BleDevice,
+  estimateDistanceFromRssi,
+  formatDistanceDisplay,
+} from './nativeBleService';
 
 // Beacon configuration interface
 export interface BeaconConfig {
@@ -87,41 +69,52 @@ export const saveBeaconConfig = (config: BeaconConfig): void => {
 };
 
 /**
- * Check if Web Bluetooth is supported
+ * Check if BLE is supported (native or web)
  */
 export const isWebBluetoothSupported = (): boolean => {
-  return typeof navigator !== 'undefined' && 'bluetooth' in navigator;
+  return isBleSupported();
 };
 
 /**
  * Check if running in Capacitor (native app)
  */
 export const isCapacitorApp = (): boolean => {
-  return typeof window !== 'undefined' && 
-         'Capacitor' in window && 
-         (window as unknown as { Capacitor: { isNativePlatform: () => boolean } }).Capacitor?.isNativePlatform?.() === true;
+  return isNativePlatform();
+};
+
+/**
+ * Initialize Bluetooth
+ */
+export const initializeBluetooth = async (): Promise<boolean> => {
+  return await initializeBle();
 };
 
 /**
  * Scan for nearby Bluetooth devices
- * Note: This requires user interaction and works only on supported browsers
+ * Uses native BLE for Capacitor, Web Bluetooth for PWA
  */
-export const scanForBeacons = async (): Promise<BluetoothDevice | null> => {
-  if (!isWebBluetoothSupported()) {
-    console.warn('Web Bluetooth is not supported in this browser');
+export const scanForBeacons = async (
+  onDeviceFound?: (device: BleDevice) => void
+): Promise<BleDevice | null> => {
+  if (!isBleSupported()) {
+    console.warn('Bluetooth is not supported');
     return null;
   }
 
   try {
-    // Request Bluetooth device - this will show the browser's device picker
-    const device = await navigator.bluetooth!.requestDevice({
-      // Accept all devices for beacon scanning
-      acceptAllDevices: true,
-      optionalServices: ['battery_service', 'device_information'],
-    });
+    // Initialize BLE if native
+    if (isNativePlatform()) {
+      await initializeBle();
+    }
 
-    console.log('Beacon found:', device.name, device.id);
-    return device;
+    const devices = await scanForDevices(5000, onDeviceFound);
+    
+    if (devices.length > 0) {
+      console.log('Beacon found:', devices[0].name, devices[0].deviceId);
+      return devices[0];
+    }
+    
+    return null;
   } catch (error) {
     console.error('Beacon scan error:', error);
     return null;
@@ -129,28 +122,21 @@ export const scanForBeacons = async (): Promise<BluetoothDevice | null> => {
 };
 
 /**
- * Estimate distance from RSSI value
- * Uses a simple path loss model
+ * Stop scanning for devices
  */
-export const estimateDistance = (rssi: number, txPower: number = -59): number => {
-  if (rssi === 0) return -1;
-  
-  const ratio = rssi / txPower;
-  if (ratio < 1.0) {
-    return Math.pow(ratio, 10);
-  }
-  return 0.89976 * Math.pow(ratio, 7.7095) + 0.111;
+export const stopBeaconScan = async (): Promise<void> => {
+  await stopScan();
 };
+
+/**
+ * Estimate distance from RSSI value
+ */
+export const estimateDistance = estimateDistanceFromRssi;
 
 /**
  * Format distance for display
  */
-export const formatDistance = (meters: number): string => {
-  if (meters < 0) return 'غير معروف';
-  if (meters < 1) return `${Math.round(meters * 100)} سم`;
-  if (meters < 10) return `${meters.toFixed(1)} متر`;
-  return `${Math.round(meters)} متر`;
-};
+export const formatDistance = formatDistanceDisplay;
 
 /**
  * Log beacon detection event
