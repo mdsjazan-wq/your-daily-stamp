@@ -87,10 +87,15 @@ const parseTimeToMinutes = (timeStr: string): number => {
 
 const addHoursToTime = (timeStr: string, hoursToAdd: number): string => {
   const result = new Date();
+  const MAX_EXIT_HOUR = 17; // 5:00 PM max
 
   const parts = timeStr.trim().split(/\s+/);
   if (parts.length < 2) {
     result.setHours(result.getHours() + hoursToAdd);
+    // Cap at 5 PM
+    if (result.getHours() > MAX_EXIT_HOUR || (result.getHours() === MAX_EXIT_HOUR && result.getMinutes() > 0)) {
+      result.setHours(MAX_EXIT_HOUR, 0, 0, 0);
+    }
     return formatTime(result);
   }
 
@@ -100,6 +105,10 @@ const addHoursToTime = (timeStr: string, hoursToAdd: number): string => {
 
   if (Number.isNaN(h) || Number.isNaN(m)) {
     result.setHours(result.getHours() + hoursToAdd);
+    // Cap at 5 PM
+    if (result.getHours() > MAX_EXIT_HOUR || (result.getHours() === MAX_EXIT_HOUR && result.getMinutes() > 0)) {
+      result.setHours(MAX_EXIT_HOUR, 0, 0, 0);
+    }
     return formatTime(result);
   }
 
@@ -108,6 +117,12 @@ const addHoursToTime = (timeStr: string, hoursToAdd: number): string => {
   if (period === "ص" && h === 12) hour = 0;
 
   result.setHours(hour + hoursToAdd, m, 0, 0);
+  
+  // Cap at 5 PM - الحد الأقصى للدوام
+  if (result.getHours() > MAX_EXIT_HOUR || (result.getHours() === MAX_EXIT_HOUR && result.getMinutes() > 0)) {
+    result.setHours(MAX_EXIT_HOUR, 0, 0, 0);
+  }
+  
   return formatTime(result);
 };
 
