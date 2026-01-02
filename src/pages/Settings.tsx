@@ -96,6 +96,7 @@ const Settings = () => {
     loadSettings();
   }, []);
 
+
   const handleNotificationToggle = async (enabled: boolean) => {
     if (enabled) {
       if (!isNotificationSupported()) {
@@ -133,11 +134,22 @@ const Settings = () => {
   };
 
   const saveRecords = (newRecords: AttendanceRecord[]) => {
-    localStorage.setItem("attendanceRecords", JSON.stringify(newRecords));
-    setRecords(newRecords);
+    // Ensure expected exit never exceeds 5:00 PM
+    const MAX_EXIT_MINUTES = 17 * 60;
+    const clamped = newRecords.map((r) => {
+      const expected24 = arabicTimeTo24(r.expectedExitTime);
+      if (!expected24) return r;
+      const [h, m] = expected24.split(":").map(Number);
+      const minutes = h * 60 + m;
+      if (minutes <= MAX_EXIT_MINUTES) return r;
+      return { ...r, expectedExitTime: formatTimeToArabic("17:00") };
+    });
+
+    localStorage.setItem("attendanceRecords", JSON.stringify(clamped));
+    setRecords(clamped);
   };
 
-  const normalizeArabicNumerals = (input: string): string => {
+  function normalizeArabicNumerals(input: string): string {
     const map: Record<string, string> = {
       "٠": "0",
       "١": "1",
@@ -151,9 +163,10 @@ const Settings = () => {
       "٩": "9",
     };
     return input.replace(/[٠-٩]/g, (d) => map[d] ?? d);
-  };
+  }
 
-  const arabicTimeTo24 = (timeStr: string): string | null => {
+
+  function arabicTimeTo24(timeStr: string): string | null {
     const raw = normalizeArabicNumerals(timeStr).trim();
 
     // Already 24h (HH:MM)
@@ -176,29 +189,70 @@ const Settings = () => {
     if (period === "ص" && hh === 12) h = 0;
 
     return `${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
-  };
+  }
+
 
   const isValidTime24 = (value: string) => /^\d{2}:\d{2}$/.test(value);
 
-  const formatTimeToArabic = (time24: string): string => {
+  function formatTimeToArabic(time24: string): string {
     const [hours, minutes] = time24.split(":").map(Number);
     const period = hours >= 12 ? "م" : "ص";
     const hour12 = hours % 12 || 12;
     return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
-  };
+  }
+
+
+  // Clamp legacy records that may have expectedExitTime past 5 PM
+  useEffect(() => {
+    const saved = localStorage.getItem("attendanceRecords");
+    if (!saved) return;
+
+    try {
+      const parsed: AttendanceRecord[] = JSON.parse(saved);
+      const MAX_EXIT_MINUTES = 17 * 60;
+      let changed = false;
+
+      const clamped = parsed.map((r) => {
+        const expected24 = arabicTimeTo24(r.expectedExitTime);
+        if (!expected24) return r;
+        const [h, m] = expected24.split(":").map(Number);
+        const minutes = h * 60 + m;
+        if (minutes <= MAX_EXIT_MINUTES) return r;
+        changed = true;
+        return { ...r, expectedExitTime: formatTimeToArabic("17:00") };
+      });
+
+      if (changed) {
+        localStorage.setItem("attendanceRecords", JSON.stringify(clamped));
+        setRecords(clamped);
+      }
+    } catch {
+      // ignore corrupt storage
+    }
+  }, []);
+
 
   const calculateExpectedExit = (entryTime: string): string => {
     const [hours, minutes] = entryTime.split(":").map(Number);
     const totalMinutes = hours * 60 + minutes;
     const minTime = 7 * 60; // 7:00 AM
+    const maxExitMinutes = 17 * 60; // 5:00 PM
 
     // إذا كان الحضور الساعة 7 صباحاً أو قبلها، يكون الخروج الساعة 3 عصراً
     if (totalMinutes <= minTime) {
       return "15:00";
     }
 
-    const exitHours = (hours + 8) % 24;
-    return `${exitHours.toString().padStart(2, "0")}:${minutes
+    const calculatedExitMinutes = totalMinutes + 8 * 60;
+
+    // الحد الأقصى للخروج 5:00 م
+    if (calculatedExitMinutes > maxExitMinutes) {
+      return "17:00";
+    }
+
+    const exitHours = Math.floor(calculatedExitMinutes / 60) % 24;
+    const exitMinutes = calculatedExitMinutes % 60;
+    return `${exitHours.toString().padStart(2, "0")}:${exitMinutes
       .toString()
       .padStart(2, "0")}`;
   };

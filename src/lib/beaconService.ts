@@ -225,18 +225,27 @@ export const registerBeaconAttendance = (type: 'entry' | 'exit'): void => {
   const timeArabic = `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
   
   if (type === 'entry') {
-    // Calculate expected exit time
+    // Calculate expected exit time (capped at 5:00 PM)
     const entryMinutes = hours * 60 + minutes;
     const minTime = 7 * 60;
+    const maxExitMinutes = 17 * 60;
     let exitTime24: string;
-    
+
     if (entryMinutes <= minTime) {
       exitTime24 = '15:00';
     } else {
-      const exitHours = (hours + 8) % 24;
-      exitTime24 = `${exitHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      const calculatedExitMinutes = entryMinutes + (8 * 60);
+      if (calculatedExitMinutes > maxExitMinutes) {
+        exitTime24 = '17:00';
+      } else {
+        const exitHours = Math.floor(calculatedExitMinutes / 60) % 24;
+        const exitMinutes = calculatedExitMinutes % 60;
+        exitTime24 = `${exitHours.toString().padStart(2, '0')}:${exitMinutes
+          .toString()
+          .padStart(2, '0')}`;
+      }
     }
-    
+
     // Format expected exit in Arabic
     const exitHour = parseInt(exitTime24.split(':')[0]);
     const exitMinute = parseInt(exitTime24.split(':')[1]);
