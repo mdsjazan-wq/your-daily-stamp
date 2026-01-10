@@ -20,6 +20,8 @@ import {
   AlertTriangle,
   Settings,
   BatteryWarning,
+  Signal,
+  Timer,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -65,6 +67,7 @@ const NativeBeaconSettings = () => {
 
     // Constants
     fixedUuid,
+    rssiPresets,
 
     // Actions
     enableBluetooth,
@@ -238,11 +241,11 @@ const NativeBeaconSettings = () => {
             </div>
 
             {/* Auto Check-out */}
-            <div className="flex items-center justify-between py-3 border-b border-border/50">
+            <div className="flex items-center justify-between py-3">
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">تسجيل خروج تلقائي</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  عند الخروج من نطاق Beacon
+                  عند دخول نطاق Beacon (بعد استيفاء الشروط)
                 </p>
               </div>
               <Switch
@@ -250,22 +253,94 @@ const NativeBeaconSettings = () => {
                 onCheckedChange={(checked) => updateSettings({ autoCheckOut: checked })}
               />
             </div>
+          </div>
 
-            {/* Last Events */}
-            <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
+          {/* Range & Duration Settings */}
+          <div className="bg-card rounded-3xl shadow-card p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Signal className="w-5 h-5 text-primary" />
+              <h3 className="text-md font-bold text-foreground">إعدادات النطاق والمدة</h3>
+            </div>
+
+            {/* RSSI Threshold Selection */}
+            <div className="py-3 border-b border-border/50">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">نطاق الكشف</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    المسافة التي يتم عندها التسجيل
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(rssiPresets).map(([key, preset]) => (
+                  <button
+                    key={key}
+                    onClick={() => updateSettings({ rssiThreshold: preset.value })}
+                    className={`p-3 rounded-xl text-sm transition-all ${
+                      settings.rssiThreshold === preset.value
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted/50 hover:bg-muted text-foreground'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                الحالي: {settings.rssiThreshold} dBm
+              </p>
+            </div>
+
+            {/* Minimum Work Hours */}
+            <div className="py-3">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Timer className="w-4 h-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">الحد الأدنى للعمل</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      المدة المطلوبة قبل تسجيل الخروج
+                    </p>
+                  </div>
+                </div>
+                <span className="text-lg font-bold text-primary">{settings.minWorkHours} ساعات</span>
+              </div>
+              <Slider
+                value={[settings.minWorkHours]}
+                onValueChange={([value]) => updateSettings({ minWorkHours: value })}
+                min={1}
+                max={8}
+                step={0.5}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>1 ساعة</span>
+                <span>8 ساعات</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Last Events */}
+          <div className="bg-card rounded-3xl shadow-card p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="w-5 h-5 text-primary" />
+              <h3 className="text-md font-bold text-foreground">آخر الأحداث</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="p-3 bg-muted/50 rounded-xl">
                 <div className="flex items-center gap-1 mb-1">
                   <Clock className="w-3 h-3 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">آخر دخول نطاق</p>
+                  <p className="text-xs text-muted-foreground">آخر تسجيل حضور</p>
                 </div>
-                <p className="font-medium">{formatTime(rangeState.lastEnterAt)}</p>
+                <p className="font-medium">{formatTime(rangeState.lastAutoCheckInAt)}</p>
               </div>
               <div className="p-3 bg-muted/50 rounded-xl">
                 <div className="flex items-center gap-1 mb-1">
                   <Clock className="w-3 h-3 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">آخر خروج نطاق</p>
+                  <p className="text-xs text-muted-foreground">آخر تسجيل انصراف</p>
                 </div>
-                <p className="font-medium">{formatTime(rangeState.lastExitAt)}</p>
+                <p className="font-medium">{formatTime(rangeState.lastAutoCheckOutAt)}</p>
               </div>
             </div>
           </div>
