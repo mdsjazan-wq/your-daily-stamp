@@ -81,11 +81,33 @@ const performBackgroundScan = async (): Promise<void> => {
   // Notify callback
   onStateChangeCallback?.(state);
 
-  // Handle events
-  if (event === 'enter' && canAutoCheckIn()) {
+  // Handle entry event - determine if check-in or check-out
+  if (event === 'enter') {
+    await handleRangeEnter();
+  }
+};
+
+/**
+ * Handle entering the beacon range
+ * Determines whether to check-in or check-out based on current state
+ */
+const handleRangeEnter = async (): Promise<void> => {
+  // Skip on weekends
+  if (!isWorkingDay()) {
+    console.log('Beacon range entered: Skipping - weekend day');
+    return;
+  }
+
+  // Determine action based on today's attendance state
+  if (canAutoCheckIn()) {
+    // No check-in today yet → perform check-in
     await handleAutoCheckIn();
-  } else if (event === 'exit' && canAutoCheckOut()) {
+  } else if (canAutoCheckOut()) {
+    // Already checked in today + meets all conditions → perform check-out
     await handleAutoCheckOut();
+  } else {
+    // Already checked in but conditions not met for check-out
+    console.log('Beacon range entered: Check-in already done, check-out conditions not met');
   }
 };
 
@@ -150,7 +172,7 @@ const handleAutoCheckOut = async (): Promise<void> => {
   // Show notification
   await showNotification({
     title: 'تسجيل الخروج التلقائي',
-    body: 'تم الخروج من نطاق Beacon - تم تسجيل الانصراف',
+    body: 'تم الدخول إلى نطاق Beacon - تم تسجيل الانصراف',
     id: 1002,
   });
 

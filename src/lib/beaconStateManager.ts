@@ -88,16 +88,14 @@ export const processScanResultNative = (
     state.lastSeen = now;
     state.lastDistance = calculateDistanceFromRssi(rssi);
 
-    // Check if RSSI indicates in-range
-    const isCurrentlyInRange = state.isInRange
-      ? rssi >= RSSI_EXIT_THRESHOLD  // Use exit threshold if already in range (hysteresis)
-      : rssi >= RSSI_ENTRY_THRESHOLD; // Use entry threshold if out of range
+    // Check if RSSI indicates in-range (use entry threshold)
+    const isCurrentlyInRange = rssi >= RSSI_ENTRY_THRESHOLD;
 
     if (isCurrentlyInRange) {
       state.consecutiveInRangeCount++;
       state.consecutiveOutRangeCount = 0;
 
-      // Check for entry event
+      // Check for entry event (used for both check-in AND check-out at entrance)
       if (!state.isInRange && state.consecutiveInRangeCount >= CONSECUTIVE_READS_REQUIRED) {
         // Check debounce
         const canEnter = !state.lastEnterAt || 
@@ -106,33 +104,33 @@ export const processScanResultNative = (
         if (canEnter) {
           state.isInRange = true;
           state.lastEnterAt = now;
-          event = 'enter';
+          event = 'enter'; // Always 'enter' - attendance type determined later
         }
       }
     } else {
       state.consecutiveOutRangeCount++;
       state.consecutiveInRangeCount = 0;
+      
+      // Reset in-range status after leaving (allow next entry detection)
+      // Using a short count to quickly reset for next pass-by
+      if (state.consecutiveOutRangeCount >= 3) {
+        state.isInRange = false;
+      }
     }
   } else {
     // No beacon found - treat as out of range
     state.consecutiveOutRangeCount++;
     state.consecutiveInRangeCount = 0;
-  }
-
-  // Check for exit event
-  const exitReadingsRequired = Math.ceil(EXIT_CONFIRM_SECONDS / SCAN_INTERVAL_SECONDS);
-  
-  if (state.isInRange && state.consecutiveOutRangeCount >= exitReadingsRequired) {
-    // Check debounce
-    const canExit = !state.lastExitAt || 
-      (Date.now() - new Date(state.lastExitAt).getTime()) > DEBOUNCE_DURATION_MS;
-
-    if (canExit) {
+    
+    // Reset in-range status
+    if (state.consecutiveOutRangeCount >= 3) {
       state.isInRange = false;
-      state.lastExitAt = now;
-      event = 'exit';
     }
   }
+
+  // NOTE: We no longer generate 'exit' events based on signal loss
+  // Both check-in and check-out happen when ENTERING the beacon range
+  // (because the beacon is at the entrance, not inside the workplace)
 
   saveBeaconRangeState(state);
   return { event, state };
