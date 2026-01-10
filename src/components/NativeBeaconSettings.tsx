@@ -16,13 +16,10 @@ import {
   VolumeX,
   TestTube2,
   Clock,
-  Copy,
   Smartphone,
   AlertTriangle,
   Settings,
   BatteryWarning,
-  MapPin,
-  Info,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -41,13 +38,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import useNativeBeacon from '@/hooks/useNativeBeacon';
-import { 
-  RSSI_ENTRY_THRESHOLD, 
-  RSSI_EXIT_THRESHOLD,
-  SCAN_INTERVAL_SECONDS,
-  EXIT_CONFIRM_SECONDS,
-  CONSECUTIVE_READS_REQUIRED,
-} from '@/lib/beaconConstants';
 import { playTestSound } from '@/lib/beaconAudio';
 
 const NativeBeaconSettings = () => {
@@ -107,50 +97,27 @@ const NativeBeaconSettings = () => {
     );
   }
 
-  // Web/PWA View - Show warning
+  // Web/PWA View - Show simple message
   if (!isNative) {
     return (
       <div className="space-y-6">
         <div className="bg-card rounded-3xl shadow-card p-6">
           <div className="flex items-center gap-2 mb-4">
             <Radio className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-foreground">إعدادات Beacon</h2>
+            <h2 className="text-lg font-bold text-foreground">التسجيل التلقائي</h2>
           </div>
 
-          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-            <div className="flex items-start gap-3">
-              <Smartphone className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="p-6 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+            <div className="flex flex-col items-center text-center gap-4">
+              <Smartphone className="w-12 h-12 text-amber-600 dark:text-amber-400" />
               <div>
-                <h3 className="font-semibold text-amber-700 dark:text-amber-300 mb-2">
-                  ميزة Beacon تعمل فقط في النسخة Native
+                <h3 className="font-semibold text-amber-700 dark:text-amber-300 mb-2 text-lg">
+                  متاح في تطبيق الهاتف فقط
                 </h3>
-                <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
-                  للاستفادة من التسجيل التلقائي عبر Beacon، يجب تثبيت التطبيق كتطبيق Native على جهاز Android.
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  قم بتحميل التطبيق للاستفادة من ميزة التسجيل التلقائي
                 </p>
-                <ul className="text-xs text-amber-600 dark:text-amber-400 space-y-1">
-                  <li>• يتطلب تصدير المشروع إلى Capacitor</li>
-                  <li>• يعمل على Android 8 وأحدث</li>
-                  <li>• يدعم العمل في الخلفية مع قفل الشاشة</li>
-                </ul>
               </div>
-            </div>
-          </div>
-
-          {/* Show UUID for reference */}
-          <div className="mt-4 p-3 bg-muted/50 rounded-xl">
-            <p className="text-xs text-muted-foreground mb-1">UUID الثابت (للمرجعية)</p>
-            <div className="flex items-center gap-2">
-              <code className="text-xs font-mono text-foreground flex-1 truncate" dir="ltr">
-                {fixedUuid}
-              </code>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={copyUuid}
-              >
-                <Copy className="w-3.5 h-3.5" />
-              </Button>
             </div>
           </div>
         </div>
@@ -211,17 +178,6 @@ const NativeBeaconSettings = () => {
           />
         </div>
 
-        {/* Scan-based notice */}
-        {settings.enabled && (
-          <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-            <div className="flex items-start gap-2">
-              <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-              <p className="text-xs text-blue-700 dark:text-blue-400">
-                يتم الاعتماد على المسح (Scan) وليس الاتصال المباشر. لا حاجة لإقران الجهاز.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Service Status */}
         {settings.enabled && (
@@ -249,47 +205,6 @@ const NativeBeaconSettings = () => {
 
       {settings.enabled && (
         <>
-          {/* UUID Display (Read-only) */}
-          <div className="bg-card rounded-3xl shadow-card p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <MapPin className="w-5 h-5 text-primary" />
-              <h3 className="text-md font-bold text-foreground">معرف Beacon</h3>
-            </div>
-
-            <div className="p-3 bg-muted/50 rounded-xl">
-              <p className="text-xs text-muted-foreground mb-1">UUID (ثابت)</p>
-              <div className="flex items-center gap-2">
-                <code className="text-xs font-mono text-foreground flex-1 truncate" dir="ltr">
-                  {fixedUuid}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  onClick={copyUuid}
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Detection Info */}
-            <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
-              <div className="p-3 bg-muted/50 rounded-xl">
-                <p className="text-xs text-muted-foreground">آخر اكتشاف</p>
-                <p className="font-medium">{formatTime(rangeState.lastSeen)}</p>
-              </div>
-              <div className="p-3 bg-muted/50 rounded-xl">
-                <p className="text-xs text-muted-foreground">المسافة التقريبية</p>
-                <p className="font-medium">
-                  {rangeState.lastDistance !== null 
-                    ? formatDistance(rangeState.lastDistance)
-                    : 'غير معروف'}
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">تقديرية</p>
-              </div>
-            </div>
-          </div>
 
           {/* Auto Registration Settings */}
           <div className="bg-card rounded-3xl shadow-card p-6">
@@ -616,36 +531,6 @@ const NativeBeaconSettings = () => {
             </Button>
           </div>
 
-          {/* Fixed Settings Info */}
-          <div className="bg-muted/50 rounded-3xl p-4">
-            <p className="text-xs text-muted-foreground text-center mb-2">
-              إعدادات ثابتة للاستقرار
-            </p>
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="p-2 bg-background/50 rounded-lg">
-                <p className="text-muted-foreground">فترة المسح</p>
-                <p className="font-medium">{SCAN_INTERVAL_SECONDS}s</p>
-              </div>
-              <div className="p-2 bg-background/50 rounded-lg">
-                <p className="text-muted-foreground">تأكيد الخروج</p>
-                <p className="font-medium">{EXIT_CONFIRM_SECONDS}s</p>
-              </div>
-              <div className="p-2 bg-background/50 rounded-lg">
-                <p className="text-muted-foreground">قراءات الدخول</p>
-                <p className="font-medium">{CONSECUTIVE_READS_REQUIRED}</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-center text-xs mt-2">
-              <div className="p-2 bg-background/50 rounded-lg">
-                <p className="text-muted-foreground">عتبة الدخول</p>
-                <p className="font-medium font-mono" dir="ltr">≥ {RSSI_ENTRY_THRESHOLD} dBm</p>
-              </div>
-              <div className="p-2 bg-background/50 rounded-lg">
-                <p className="text-muted-foreground">عتبة الخروج</p>
-                <p className="font-medium font-mono" dir="ltr">&lt; {RSSI_EXIT_THRESHOLD} dBm</p>
-              </div>
-            </div>
-          </div>
         </>
       )}
     </div>
