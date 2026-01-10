@@ -10,6 +10,9 @@ import {
   SCAN_INTERVAL_SECONDS,
   CONSECUTIVE_READS_REQUIRED,
   DEBOUNCE_DURATION_MS,
+  MIN_WORK_DURATION_HOURS,
+  WORK_START_HOUR,
+  WEEKEND_DAYS,
   calculateDistanceFromRssi,
   formatDistanceArabic,
 } from './beaconConstants';
@@ -166,7 +169,53 @@ export const canAutoCheckIn = (): boolean => {
 };
 
 /**
- * Check if auto check-out is allowed (checked in today, not checked out)
+ * Check if current day is a working day (not weekend)
+ */
+export const isWorkingDay = (): boolean => {
+  const dayOfWeek = new Date().getDay();
+  return !WEEKEND_DAYS.includes(dayOfWeek);
+};
+
+/**
+ * Check if exit time is allowed based on business rules
+ * - Must not be a weekend
+ * - Must be after WORK_START_HOUR (7 AM)
+ */
+export const isExitTimeAllowed = (): { allowed: boolean; reason: string } => {
+  const now = new Date();
+  const hours = now.getHours();
+  const dayOfWeek = now.getDay();
+  
+  // No check-out on weekends
+  if (WEEKEND_DAYS.includes(dayOfWeek)) {
+    return { allowed: false, reason: 'يوم إجازة' };
+  }
+  
+  // No check-out before work start hour (7 AM)
+  if (hours < WORK_START_HOUR) {
+    return { allowed: false, reason: 'لم يبدأ الدوام بعد' };
+  }
+  
+  return { allowed: true, reason: '' };
+};
+
+/**
+ * Check if minimum work duration has passed since check-in
+ * Prevents accidental early check-outs
+ */
+export const hasMinimumWorkDuration = (): boolean => {
+  const state = getBeaconRangeState();
+  if (!state.lastAutoCheckInAt) return false;
+  
+  const checkInTime = new Date(state.lastAutoCheckInAt);
+  const now = new Date();
+  const hoursSinceCheckIn = (now.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
+  
+  return hoursSinceCheckIn >= MIN_WORK_DURATION_HOURS;
+};
+
+/**
+ * Check if auto check-out is allowed (checked in today, not checked out, and meets all business rules)
  */
 export const canAutoCheckOut = (): boolean => {
   const state = getBeaconRangeState();
@@ -183,6 +232,12 @@ export const canAutoCheckOut = (): boolean => {
     const lastCheckOutDate = new Date(state.lastAutoCheckOutAt).toDateString();
     if (lastCheckOutDate === today) return false;
   }
+
+  // Must meet exit time requirements
+  if (!isExitTimeAllowed().allowed) return false;
+
+  // Must have worked minimum duration
+  if (!hasMinimumWorkDuration()) return false;
 
   return true;
 };

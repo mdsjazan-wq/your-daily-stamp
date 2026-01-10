@@ -18,9 +18,14 @@ export const RSSI_EXIT_THRESHOLD = -90;  // dBm - device is "out of range" when 
 // Timing constants (fixed for stability)
 export const SCAN_INTERVAL_SECONDS = 5;      // How often to scan
 export const SCAN_DURATION_MS = 3000;        // Each scan duration
-export const EXIT_CONFIRM_SECONDS = 30;      // Wait time before confirming exit
+export const EXIT_CONFIRM_SECONDS = 300;     // 5 minutes wait time before confirming exit (prevents accidental exits)
 export const CONSECUTIVE_READS_REQUIRED = 3; // Required consecutive in-range readings for entry
 export const DEBOUNCE_DURATION_MS = 5 * 60 * 1000; // 5 minutes debounce between events
+
+// Business rules constants
+export const MIN_WORK_DURATION_HOURS = 4;    // Minimum hours before allowing auto check-out
+export const WORK_START_HOUR = 7;            // No check-out before this hour (7 AM)
+export const WEEKEND_DAYS = [5, 6];          // Friday (5) and Saturday (6) are weekends
 
 // Distance calculation constants
 export const TX_POWER_AT_1M = -59; // RSSI at 1 meter (calibrated for iBeacon)
