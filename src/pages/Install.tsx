@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Download, Share, Smartphone, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -12,6 +13,31 @@ const Install = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const isNative = Capacitor.isNativePlatform();
+
+  // إذا كان التطبيق Native، أعد التوجيه للصفحة الرئيسية
+  if (isNative) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card rounded-3xl shadow-card p-8 max-w-sm w-full text-center animate-scale-in">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl gradient-success flex items-center justify-center">
+            <CheckCircle2 className="w-10 h-10 text-success-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground mb-2">أنت تستخدم التطبيق!</h1>
+          <p className="text-muted-foreground mb-6">
+            التطبيق مثبت بالفعل على جهازك
+          </p>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-6 py-3 gradient-primary text-primary-foreground rounded-2xl font-semibold"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            العودة للتطبيق
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     // Check if already installed
