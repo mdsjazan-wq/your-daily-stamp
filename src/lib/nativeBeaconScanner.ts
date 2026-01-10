@@ -40,6 +40,8 @@ export const isNativeBeaconSupported = (): boolean => {
 export const requestBeaconPermissions = async (): Promise<{
   granted: boolean;
   message?: string;
+  needsLocationSettings?: boolean;
+  needsAppSettings?: boolean;
 }> => {
   if (!isNativePlatform()) {
     return { granted: false, message: 'ميزة Beacon تعمل فقط في النسخة Native' };
@@ -47,14 +49,31 @@ export const requestBeaconPermissions = async (): Promise<{
 
   try {
     const { BleClient } = await import('@capacitor-community/bluetooth-le');
+    const { Capacitor } = await import('@capacitor/core');
     
-    // Initialize BLE - this triggers permission requests on Android
+    // 1. Check location services on Android (required for BLE scanning)
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        const isLocationEnabled = await BleClient.isLocationEnabled();
+        if (!isLocationEnabled) {
+          return { 
+            granted: false, 
+            message: 'يرجى تفعيل خدمات الموقع للبحث عن أجهزة Beacon',
+            needsLocationSettings: true
+          };
+        }
+      } catch (locError) {
+        console.log('Location check not supported, continuing...', locError);
+      }
+    }
+    
+    // 2. Initialize BLE - this triggers permission requests on Android
+    // IMPORTANT: Do NOT use androidNeverForLocation as it filters iBeacons!
     await BleClient.initialize();
     
-    // Check if Bluetooth is enabled
+    // 3. Check if Bluetooth is enabled
     const isEnabled = await BleClient.isEnabled();
     if (!isEnabled) {
-      // Try to enable Bluetooth
       try {
         await BleClient.requestEnable();
       } catch {
@@ -67,10 +86,11 @@ export const requestBeaconPermissions = async (): Promise<{
     console.error('Permission request error:', error);
     const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
     
-    if (errorMsg.includes('permission')) {
+    if (errorMsg.includes('permission') || errorMsg.includes('denied') || errorMsg.includes('Permission')) {
       return { 
         granted: false, 
-        message: 'يرجى منح صلاحيات البلوتوث والموقع من إعدادات التطبيق' 
+        message: 'يرجى منح صلاحيات البلوتوث والموقع من إعدادات التطبيق',
+        needsAppSettings: true
       };
     }
     
@@ -208,5 +228,48 @@ export const requestEnableBluetooth = async (): Promise<boolean> => {
     return true;
   } catch {
     return false;
+  }
+};
+
+/**
+ * Open device location settings
+ */
+export const openLocationSettings = async (): Promise<void> => {
+  if (!isNativePlatform()) return;
+
+  try {
+    const { BleClient } = await import('@capacitor-community/bluetooth-le');
+    await BleClient.openLocationSettings();
+  } catch (error) {
+    console.error('Error opening location settings:', error);
+  }
+};
+
+/**
+ * Open app settings for manual permission granting
+ */
+export const openAppSettings = async (): Promise<void> => {
+  if (!isNativePlatform()) return;
+
+  try {
+    const { BleClient } = await import('@capacitor-community/bluetooth-le');
+    await BleClient.openAppSettings();
+  } catch (error) {
+    console.error('Error opening app settings:', error);
+  }
+};
+
+/**
+ * Check if location services are enabled
+ */
+export const isLocationEnabled = async (): Promise<boolean> => {
+  if (!isNativePlatform()) return true;
+
+  try {
+    const { BleClient } = await import('@capacitor-community/bluetooth-le');
+    return await BleClient.isLocationEnabled();
+  } catch {
+    // If not supported, assume enabled
+    return true;
   }
 };

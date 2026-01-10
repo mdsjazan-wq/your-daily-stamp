@@ -13,6 +13,9 @@ import {
   requestBeaconPermissions,
   isBluetoothEnabled,
   requestEnableBluetooth,
+  openLocationSettings,
+  openAppSettings,
+  isLocationEnabled,
   ScannedBeacon,
 } from '@/lib/nativeBeaconScanner';
 import {
@@ -151,6 +154,23 @@ export const useNativeBeacon = () => {
     });
   }, []);
 
+  // Check location services
+  const checkLocationServices = useCallback(async (): Promise<boolean> => {
+    if (!isNative) return true;
+
+    const locationOn = await isLocationEnabled();
+    if (!locationOn) {
+      toast.error('يرجى تفعيل خدمات الموقع', {
+        action: {
+          label: 'فتح الإعدادات',
+          onClick: () => openLocationSettings(),
+        },
+      });
+      return false;
+    }
+    return true;
+  }, [isNative]);
+
   // Request permissions
   const requestPermissions = useCallback(async (): Promise<boolean> => {
     if (!isNative) {
@@ -162,7 +182,23 @@ export const useNativeBeacon = () => {
     setPermissionsGranted(result.granted);
 
     if (!result.granted) {
-      toast.error(result.message || 'فشل في الحصول على الصلاحيات');
+      if (result.needsLocationSettings) {
+        toast.error(result.message || 'يرجى تفعيل خدمات الموقع', {
+          action: {
+            label: 'فتح الإعدادات',
+            onClick: () => openLocationSettings(),
+          },
+        });
+      } else if (result.needsAppSettings) {
+        toast.error(result.message || 'يرجى منح الصلاحيات من إعدادات التطبيق', {
+          action: {
+            label: 'فتح الإعدادات',
+            onClick: () => openAppSettings(),
+          },
+        });
+      } else {
+        toast.error(result.message || 'فشل في الحصول على الصلاحيات');
+      }
     }
 
     return result.granted;
@@ -182,6 +218,16 @@ export const useNativeBeacon = () => {
     return enabled;
   }, [isNative]);
 
+  // Open app settings
+  const handleOpenAppSettings = useCallback(async (): Promise<void> => {
+    await openAppSettings();
+  }, []);
+
+  // Open location settings
+  const handleOpenLocationSettings = useCallback(async (): Promise<void> => {
+    await openLocationSettings();
+  }, []);
+
   // Toggle beacon tracking
   const toggleBeaconTracking = useCallback(async (enable: boolean): Promise<boolean> => {
     if (!isNative) {
@@ -190,18 +236,22 @@ export const useNativeBeacon = () => {
     }
 
     if (enable) {
-      // Request permissions first
+      // 1. Check location services first
+      const locationOk = await checkLocationServices();
+      if (!locationOk) return false;
+
+      // 2. Request permissions
       const hasPermissions = await requestPermissions();
       if (!hasPermissions) return false;
 
-      // Check Bluetooth
+      // 3. Check Bluetooth
       const btEnabled = await isBluetoothEnabled();
       if (!btEnabled) {
         const enabled = await enableBluetooth();
         if (!enabled) return false;
       }
 
-      // Start service
+      // 4. Start service
       const started = await startBeaconService();
       if (started) {
         setServiceRunning(true);
@@ -219,7 +269,7 @@ export const useNativeBeacon = () => {
       toast.success('تم إيقاف تتبع Beacon');
       return true;
     }
-  }, [isNative, requestPermissions, enableBluetooth, updateSettings]);
+  }, [isNative, checkLocationServices, requestPermissions, enableBluetooth, updateSettings]);
 
   // Test scan
   const performTestScan = useCallback(async () => {
@@ -375,6 +425,8 @@ export const useNativeBeacon = () => {
     performManualCheckOut,
     resetState,
     copyUuid,
+    openAppSettings: handleOpenAppSettings,
+    openLocationSettings: handleOpenLocationSettings,
 
     // Utilities
     formatTime: formatTimeArabicNative,

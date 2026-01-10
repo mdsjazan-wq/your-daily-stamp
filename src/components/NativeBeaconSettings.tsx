@@ -73,6 +73,7 @@ const NativeBeaconSettings = () => {
     performManualCheckIn,
     performManualCheckOut,
     copyUuid,
+    openAppSettings,
 
     // Utilities
     formatTime,
@@ -136,7 +137,7 @@ const NativeBeaconSettings = () => {
         </div>
 
         {/* Bluetooth Status */}
-        <div className="mb-4 p-3 rounded-xl bg-muted/50">
+        <div className={`mb-4 p-3 rounded-xl ${bluetoothOn ? 'bg-muted/50' : 'bg-red-500/10 border border-red-500/30'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
               {bluetoothOn ? (
@@ -147,18 +148,27 @@ const NativeBeaconSettings = () => {
               ) : (
                 <>
                   <BluetoothOff className="w-4 h-4 text-destructive" />
-                  <span className="text-muted-foreground">البلوتوث غير مفعّل</span>
+                  <span className="text-red-600 dark:text-red-400">البلوتوث غير مفعّل</span>
                 </>
               )}
             </div>
             {!bluetoothOn && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={enableBluetooth}
-              >
-                تفعيل
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={enableBluetooth}
+                >
+                  تفعيل
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openAppSettings}
+                >
+                  الإعدادات
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -522,12 +532,10 @@ const NativeBeaconSettings = () => {
             <Button
               variant="outline"
               className="w-full mt-4"
-              onClick={() => {
-                toast.info('افتح إعدادات الجهاز > التطبيقات > هذا التطبيق > البطارية');
-              }}
+              onClick={openAppSettings}
             >
               <Settings className="w-4 h-4 ml-2" />
-              عرض التعليمات
+              فتح إعدادات التطبيق
             </Button>
           </div>
 
