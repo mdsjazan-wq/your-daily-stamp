@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Clock, LogIn, LogOut, Calendar, AlertCircle, CheckCircle2, Timer, History, Download, X, Settings, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { Capacitor } from "@capacitor/core";
 import BalanceWarningBanner from "@/components/BalanceWarningBanner";
 import {
   AlertDialog,
@@ -639,7 +640,7 @@ const Index = () => {
       <BalanceWarningBanner />
 
       {/* Install Banner */}
-      {showInstallBanner && !isStandalone && (
+      {showInstallBanner && !isStandalone && !Capacitor.isNativePlatform() && (
         <div className="bg-primary/10 border-b border-primary/20 px-4 py-3 animate-slide-up">
           <div className="max-w-md mx-auto flex items-center justify-between gap-3">
             <Link 
