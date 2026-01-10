@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import BeaconSettings from "@/components/BeaconSettings";
+import NativeBeaconSettings from "@/components/NativeBeaconSettings";
 
 interface AttendanceRecord {
   date: string;
@@ -694,8 +694,8 @@ const Settings = () => {
               </div>
             </div>
 
-            {/* Beacon Settings */}
-            <BeaconSettings />
+            {/* Native Beacon Settings */}
+            <NativeBeaconSettings />
           </TabsContent>
 
           {/* تبويب السجلات */}
