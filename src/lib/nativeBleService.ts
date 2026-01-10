@@ -83,6 +83,8 @@ export interface BleDevice {
   name?: string;
   rssi?: number;
   txPower?: number;
+  serviceUuids?: string[];
+  manufacturerData?: { [key: string]: number[] };
 }
 
 // Scan for BLE devices (native)
@@ -99,18 +101,44 @@ export const scanForDevices = async (
       await BleClient.requestLEScan(
         {},
         (result) => {
+          // Extract service UUIDs from scan result
+          const serviceUuids: string[] = [];
+          if (result.uuids) {
+            serviceUuids.push(...result.uuids);
+          }
+          
+          // Extract manufacturer data
+          const manufacturerData: { [key: string]: number[] } = {};
+          if (result.manufacturerData) {
+            Object.entries(result.manufacturerData).forEach(([key, value]) => {
+              if (value instanceof DataView) {
+                const arr: number[] = [];
+                for (let i = 0; i < value.byteLength; i++) {
+                  arr.push(value.getUint8(i));
+                }
+                manufacturerData[key] = arr;
+              }
+            });
+          }
+          
           const device: BleDevice = {
             deviceId: result.device.deviceId,
             name: result.device.name || result.localName,
             rssi: result.rssi,
             txPower: result.txPower,
+            serviceUuids: serviceUuids.length > 0 ? serviceUuids : undefined,
+            manufacturerData: Object.keys(manufacturerData).length > 0 ? manufacturerData : undefined,
           };
           
-          // Avoid duplicates
-          if (!devices.find(d => d.deviceId === device.deviceId)) {
+          // Avoid duplicates - update if exists with newer data
+          const existingIndex = devices.findIndex(d => d.deviceId === device.deviceId);
+          if (existingIndex >= 0) {
+            // Update with latest RSSI
+            devices[existingIndex] = { ...devices[existingIndex], ...device };
+          } else {
             devices.push(device);
-            onDeviceFound?.(device);
           }
+          onDeviceFound?.(device);
         }
       );
 
