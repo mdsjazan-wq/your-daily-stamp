@@ -9,11 +9,11 @@
 
 import { isNativePlatform } from './nativeBleService';
 import { startBeaconScan, stopBeaconScan, ScannedBeacon } from './nativeBeaconScanner';
-import { processScanResultNative, recordAutoCheckIn, recordAutoCheckOut, canAutoCheckIn, canAutoCheckOut, BeaconRangeState } from './beaconStateManager';
+import { processScanResultNative, recordAutoCheckIn, recordAutoCheckOut, canAutoCheckIn, canAutoCheckOut, isWorkingDay, isExitTimeAllowed, hasMinimumWorkDuration, BeaconRangeState } from './beaconStateManager';
 import { SCAN_INTERVAL_SECONDS, SCAN_DURATION_MS, FIXED_BEACON_UUID } from './beaconConstants';
 import { playEntrySound, playExitSound, getAudioSettings } from './beaconAudio';
 import { showNotification } from './nativeNotifications';
-import { logBeaconEvent } from './beaconService';
+import { logBeaconEvent, registerBeaconAttendance } from './beaconService';
 
 // Service state
 let isServiceRunning = false;
@@ -93,6 +93,12 @@ const performBackgroundScan = async (): Promise<void> => {
  * Handle automatic check-in
  */
 const handleAutoCheckIn = async (): Promise<void> => {
+  // Skip check-in on weekends
+  if (!isWorkingDay()) {
+    console.log('Skipping auto check-in: weekend');
+    return;
+  }
+
   const audioSettings = getAudioSettings();
   
   // Play entry sound
@@ -107,11 +113,11 @@ const handleAutoCheckIn = async (): Promise<void> => {
     id: 1001,
   });
 
-  // Record the check-in
+  // Record the check-in in beacon state
   recordAutoCheckIn();
   
-  // Dispatch event for UI update
-  window.dispatchEvent(new CustomEvent('beaconAutoCheckIn'));
+  // Register the attendance in the main app data
+  registerBeaconAttendance('entry');
   
   // Log event
   logBeaconEvent('enter', { auto: true, uuid: FIXED_BEACON_UUID });
@@ -121,6 +127,19 @@ const handleAutoCheckIn = async (): Promise<void> => {
  * Handle automatic check-out
  */
 const handleAutoCheckOut = async (): Promise<void> => {
+  // Check if exit is allowed by business rules
+  const exitCheck = isExitTimeAllowed();
+  if (!exitCheck.allowed) {
+    console.log(`Skipping auto check-out: ${exitCheck.reason}`);
+    return;
+  }
+
+  // Check minimum work duration (4 hours)
+  if (!hasMinimumWorkDuration()) {
+    console.log('Skipping auto check-out: minimum work duration not met (4 hours required)');
+    return;
+  }
+
   const audioSettings = getAudioSettings();
   
   // Play exit sound
@@ -135,11 +154,11 @@ const handleAutoCheckOut = async (): Promise<void> => {
     id: 1002,
   });
 
-  // Record the check-out
+  // Record the check-out in beacon state
   recordAutoCheckOut();
   
-  // Dispatch event for UI update
-  window.dispatchEvent(new CustomEvent('beaconAutoCheckOut'));
+  // Register the attendance in the main app data
+  registerBeaconAttendance('exit');
   
   // Log event
   logBeaconEvent('exit', { auto: true });

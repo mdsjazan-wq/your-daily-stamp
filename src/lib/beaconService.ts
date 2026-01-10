@@ -281,6 +281,7 @@ export const registerBeaconAttendance = (type: 'entry' | 'exit'): void => {
     logBeaconEvent('exit', { time: timeArabic, time24 });
   }
   
-  // Dispatch event to update UI
+  // Dispatch events to update UI
   window.dispatchEvent(new CustomEvent('beaconAttendance', { detail: { type, time: timeArabic } }));
+  window.dispatchEvent(new CustomEvent('todayDataCleared')); // Trigger main page refresh
 };
