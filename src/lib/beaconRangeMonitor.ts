@@ -16,6 +16,8 @@ export type RangePreset = 'veryClose' | 'close' | 'medium' | 'far' | 'custom';
 export interface BeaconRangeSettings {
   preset: RangePreset;
   customRssiThreshold: number; // -95 to -40
+  customExitThreshold?: number; // Custom exit threshold (optional)
+  useCustomExitThreshold?: boolean; // Whether to use custom exit threshold
   exitConfirmSeconds: number; // How long to wait before confirming exit
   scanIntervalSeconds: number; // How often to scan
   requiredConsecutiveReadings: number; // Required consecutive readings for entry
@@ -149,10 +151,96 @@ export const getEntryThreshold = (settings?: BeaconRangeSettings): number => {
 };
 
 /**
- * Get exit threshold (with hysteresis)
+ * Get exit threshold (with hysteresis or custom value)
  */
 export const getExitThreshold = (settings?: BeaconRangeSettings): number => {
-  return getCurrentRssiThreshold(settings) - HYSTERESIS_OFFSET;
+  const s = settings || getRangeSettings();
+  // Use custom exit threshold if enabled and preset is custom
+  if (s.preset === 'custom' && s.useCustomExitThreshold && s.customExitThreshold !== undefined) {
+    return s.customExitThreshold;
+  }
+  return getCurrentRssiThreshold(s) - HYSTERESIS_OFFSET;
+};
+
+/**
+ * Check if device matches target UUID
+ */
+export const matchesBeaconUuid = (
+  device: BleDevice,
+  targetUuid: string
+): boolean => {
+  if (!targetUuid || targetUuid.trim() === '') {
+    return false;
+  }
+  
+  const normalizedTarget = targetUuid.toLowerCase().replace(/-/g, '');
+  
+  // Check service UUIDs
+  if (device.serviceUuids) {
+    const match = device.serviceUuids.some(uuid => 
+      uuid.toLowerCase().replace(/-/g, '').includes(normalizedTarget) ||
+      normalizedTarget.includes(uuid.toLowerCase().replace(/-/g, ''))
+    );
+    if (match) return true;
+  }
+  
+  // Check iBeacon manufacturer data (Apple's company ID: 0x004C)
+  if (device.manufacturerData) {
+    const appleData = device.manufacturerData['76']; // 0x004C in decimal
+    if (appleData && appleData.length >= 23) {
+      // iBeacon format: type (1) + length (1) + UUID (16) + major (2) + minor (2) + txPower (1)
+      if (appleData[0] === 0x02 && appleData[1] === 0x15) {
+        const uuidBytes = appleData.slice(2, 18);
+        const extractedUuid = uuidBytes.map(b => b.toString(16).padStart(2, '0')).join('');
+        if (extractedUuid.includes(normalizedTarget) || normalizedTarget.includes(extractedUuid)) {
+          return true;
+        }
+      }
+    }
+  }
+  
+  return false;
+};
+
+/**
+ * Check if device matches target by name (fallback)
+ */
+export const matchesBeaconName = (
+  device: BleDevice,
+  targetName?: string
+): boolean => {
+  const name = device.name?.toLowerCase() || '';
+  
+  // If specific target name provided
+  if (targetName && targetName.trim() !== '') {
+    return name.includes(targetName.toLowerCase());
+  }
+  
+  // Default beacon name patterns
+  return name.includes('beacon') || name.includes('bc04');
+};
+
+/**
+ * Unified device matching function
+ */
+export const matchesBeaconIdentifier = (
+  device: BleDevice,
+  uuid?: string,
+  name?: string
+): { matches: boolean; matchType: 'uuid' | 'name' | 'none' } => {
+  // Try UUID match first (more secure)
+  if (uuid && uuid.trim() !== '') {
+    if (matchesBeaconUuid(device, uuid)) {
+      return { matches: true, matchType: 'uuid' };
+    }
+  }
+  
+  // Fallback to name match
+  if (matchesBeaconName(device, name)) {
+    return { matches: true, matchType: 'name' };
+  }
+  
+  return { matches: false, matchType: 'none' };
 };
 
 /**

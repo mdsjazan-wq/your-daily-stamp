@@ -13,7 +13,11 @@ import {
   Settings2,
   TestTube2,
   Clock,
-  Gauge
+  Gauge,
+  Info,
+  Copy,
+  Shield,
+  ShieldAlert
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -47,6 +51,7 @@ import {
   getCurrentRssiThreshold,
   getEntryThreshold,
   getExitThreshold,
+  matchesBeaconIdentifier,
   PRESET_LABELS,
   PRESET_RSSI_VALUES,
   RangePreset,
@@ -87,6 +92,7 @@ import { Separator } from '@/components/ui/separator';
 interface ExtendedScanResult extends BleDevice {
   lastSeen: Date;
   isInRange: boolean;
+  matchType?: 'uuid' | 'name' | 'none';
 }
 
 const BeaconSettings = () => {
@@ -103,6 +109,7 @@ const BeaconSettings = () => {
   const [bleInitialized, setBleInitialized] = useState(false);
   const [scanResults, setScanResults] = useState<ExtendedScanResult[]>([]);
   const [scanProgress, setScanProgress] = useState(0);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
   
   // Refs
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -146,21 +153,27 @@ const BeaconSettings = () => {
     const runBackgroundScan = async () => {
       try {
         const devices = await scanForDevices(3000);
-        const targetDevice = devices.find(d => 
-          d.name?.toLowerCase().includes('beacon') || 
-          d.name?.toLowerCase().includes('bc04')
-        );
+        
+        // Filter by UUID first, then fallback to name
+        const targetDevice = devices.find(d => {
+          const { matches } = matchesBeaconIdentifier(d, config.uuid, config.name);
+          return matches;
+        });
         
         const rssi = targetDevice?.rssi ?? null;
         const { event, state } = processScanResult(rssi, rangeSettings);
         setRangeState(state);
         
         if (event === 'enter' && config.autoCheckIn && canAutoCheckIn()) {
-          // Trigger check-in through existing system
           handleAutoCheckIn();
+          toast.success('تم الدخول إلى نطاق Beacon', {
+            description: 'تم تسجيل الدخول تلقائياً',
+          });
         } else if (event === 'exit' && config.autoCheckOut && canAutoCheckOut()) {
-          // Trigger check-out through existing system
           handleAutoCheckOut();
+          toast.success('تم الخروج من نطاق Beacon', {
+            description: 'تم تسجيل الخروج تلقائياً',
+          });
         }
       } catch (error) {
         console.error('Background scan error:', error);
@@ -239,32 +252,52 @@ const BeaconSettings = () => {
     setIsScanning(true);
     setScanResults([]);
     setScanProgress(0);
+    setRemainingSeconds(12);
 
     const duration = 12000; // 12 seconds
     const startTime = Date.now();
     const foundDevices = new Map<string, ExtendedScanResult>();
 
-    // Progress timer
+    // Progress timer with seconds countdown
     scanIntervalRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min((elapsed / duration) * 100, 100);
+      const remaining = Math.max(0, Math.ceil((duration - elapsed) / 1000));
       setScanProgress(progress);
+      setRemainingSeconds(remaining);
     }, 100);
 
     try {
       await scanForDevices(duration, (device) => {
         const rssi = device.rssi ?? -100;
-        const threshold = getCurrentRssiThreshold(rangeSettings);
-        const isInRange = rssi >= threshold;
+        const entryThreshold = getEntryThreshold(rangeSettings);
+        const isInRange = rssi >= entryThreshold;
+        
+        // Check if matches target UUID or name
+        const { matches, matchType } = matchesBeaconIdentifier(device, config.uuid, config.name);
         
         const extendedDevice: ExtendedScanResult = {
           ...device,
           lastSeen: new Date(),
           isInRange,
+          matchType: matches ? matchType : 'none',
         };
         
         foundDevices.set(device.deviceId, extendedDevice);
-        setScanResults(Array.from(foundDevices.values()));
+        
+        // Sort: matching devices first, then by RSSI
+        const sortedDevices = Array.from(foundDevices.values()).sort((a, b) => {
+          // Matching devices first
+          if (a.matchType !== 'none' && b.matchType === 'none') return -1;
+          if (a.matchType === 'none' && b.matchType !== 'none') return 1;
+          // UUID matches before name matches
+          if (a.matchType === 'uuid' && b.matchType === 'name') return -1;
+          if (a.matchType === 'name' && b.matchType === 'uuid') return 1;
+          // Then by RSSI (stronger signal first)
+          return (b.rssi ?? -100) - (a.rssi ?? -100);
+        });
+        
+        setScanResults(sortedDevices);
       });
     } catch (error) {
       console.error('Scan error:', error);
@@ -272,10 +305,26 @@ const BeaconSettings = () => {
     } finally {
       setIsScanning(false);
       setScanProgress(100);
+      setRemainingSeconds(0);
       if (scanIntervalRef.current) {
         clearInterval(scanIntervalRef.current);
       }
       await stopScan();
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success(`تم نسخ ${label}`);
+    }).catch(() => {
+      toast.error('فشل النسخ');
+    });
+  };
+
+  const useDeviceUuid = (uuids: string[]) => {
+    if (uuids.length > 0) {
+      handleConfigChange({ uuid: uuids[0] });
+      toast.success('تم تحديد UUID الجهاز');
     }
   };
 
@@ -363,6 +412,18 @@ const BeaconSettings = () => {
             disabled={!bluetoothSupported}
           />
         </div>
+
+        {/* Scan-based operation notice */}
+        {config.enabled && (
+          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+            <div className="flex items-start gap-2">
+              <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-blue-700 dark:text-blue-400">
+                يتم الاعتماد على المسح (Scan) وليس الاتصال المباشر بالجهاز. لا حاجة لإقران الجهاز.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {config.enabled && (
@@ -451,11 +512,16 @@ const BeaconSettings = () => {
                   }
                 />
               </div>
-              {rangeSettings.preset === 'custom' && (
+            {rangeSettings.preset === 'custom' && (
+              <div className="space-y-4">
+                {/* Entry Threshold */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">عتبة الدخول</span>
+                    <span className="font-mono text-green-600 dark:text-green-400" dir="ltr">{rangeSettings.customRssiThreshold} dBm</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-muted-foreground">حساس (بعيد)</span>
-                    <span className="font-mono" dir="ltr">{rangeSettings.customRssiThreshold} dBm</span>
                     <span className="text-muted-foreground">دقيق (قريب)</span>
                   </div>
                   <Slider
@@ -467,7 +533,50 @@ const BeaconSettings = () => {
                     className="w-full"
                   />
                 </div>
-              )}
+
+                {/* Custom Exit Threshold Toggle */}
+                <div className="flex items-center justify-between py-2 border-t border-border/50">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">تحديد عتبة الخروج يدوياً</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      بدلاً من الحساب التلقائي (Hysteresis)
+                    </p>
+                  </div>
+                  <Switch
+                    checked={rangeSettings.useCustomExitThreshold ?? false}
+                    onCheckedChange={(checked) => 
+                      handleRangeSettingsChange({ 
+                        useCustomExitThreshold: checked,
+                        customExitThreshold: checked ? (rangeSettings.customRssiThreshold - 8) : undefined
+                      })
+                    }
+                  />
+                </div>
+
+                {/* Exit Threshold Slider (when custom is enabled) */}
+                {rangeSettings.useCustomExitThreshold && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">عتبة الخروج</span>
+                      <span className="font-mono text-red-600 dark:text-red-400" dir="ltr">
+                        {rangeSettings.customExitThreshold ?? (rangeSettings.customRssiThreshold - 8)} dBm
+                      </span>
+                    </div>
+                    <Slider
+                      value={[rangeSettings.customExitThreshold ?? (rangeSettings.customRssiThreshold - 8)]}
+                      onValueChange={([value]) => handleRangeSettingsChange({ customExitThreshold: value })}
+                      min={-100}
+                      max={rangeSettings.customRssiThreshold - 5}
+                      step={1}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      يجب أن تكون أقل من عتبة الدخول لتجنب التذبذب
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
             </div>
 
             <Separator className="my-4" />
@@ -735,7 +844,7 @@ const BeaconSettings = () => {
               {isScanning ? (
                 <>
                   <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  جاري البحث ({Math.round(scanProgress)}%)
+                  جاري البحث ({remainingSeconds} ثانية متبقية)
                 </>
               ) : (
                 <>
@@ -767,29 +876,77 @@ const BeaconSettings = () => {
                   <div
                     key={device.deviceId}
                     className={`p-3 rounded-xl border ${
-                      device.isInRange 
-                        ? 'bg-green-500/10 border-green-500/30' 
+                      device.matchType !== 'none'
+                        ? device.isInRange
+                          ? 'bg-green-500/10 border-green-500/30'
+                          : 'bg-blue-500/10 border-blue-500/30'
                         : 'bg-muted/50 border-border/50'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">
-                        {device.name || 'جهاز غير معروف'}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        device.isInRange 
-                          ? 'bg-green-500/20 text-green-600 dark:text-green-400' 
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {device.isInRange ? 'داخل النطاق' : 'خارج النطاق'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {device.matchType === 'uuid' && (
+                          <Shield className="w-4 h-4 text-green-500" />
+                        )}
+                        {device.matchType === 'name' && (
+                          <ShieldAlert className="w-4 h-4 text-amber-500" />
+                        )}
+                        <span className="font-medium text-sm">
+                          {device.name || 'جهاز غير معروف'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {device.matchType !== 'none' && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            device.isInRange 
+                              ? 'bg-green-500/20 text-green-600 dark:text-green-400' 
+                              : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                          }`}>
+                            {device.isInRange ? 'داخل النطاق' : 'خارج النطاق'}
+                          </span>
+                        )}
+                        {device.matchType === 'none' && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                            غير مطابق
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground font-mono" dir="ltr">
+                    
+                    <div className="text-xs text-muted-foreground font-mono mb-2" dir="ltr">
                       <span>ID: {device.deviceId.substring(0, 17)}...</span>
                       {device.rssi && (
                         <span className="mr-3">RSSI: {device.rssi} dBm</span>
                       )}
                     </div>
+
+                    {/* Service UUIDs */}
+                    {device.serviceUuids && device.serviceUuids.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-border/30">
+                        <p className="text-xs text-muted-foreground mb-1">Service UUIDs:</p>
+                        {device.serviceUuids.map((uuid, idx) => (
+                          <div key={idx} className="flex items-center justify-between gap-2 text-xs font-mono bg-muted/50 p-1 rounded mb-1" dir="ltr">
+                            <span className="truncate">{uuid}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => copyToClipboard(uuid, 'UUID')}
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-2"
+                          onClick={() => useDeviceUuid(device.serviceUuids!)}
+                        >
+                          استخدام هذا الجهاز
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
