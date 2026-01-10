@@ -141,6 +141,56 @@ const Index = () => {
   const [exitConfirmShown, setExitConfirmShown] = useState(false);
   const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false);
 
+  // Beacon auto check-in listener
+  useEffect(() => {
+    const handleBeaconCheckIn = () => {
+      // Use existing check-in logic
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      
+      // Skip weekends
+      if (dayOfWeek === 5 || dayOfWeek === 6) return;
+      
+      // Skip if already checked in
+      const todayKey = getDateKey(now);
+      const savedToday = localStorage.getItem(`today_${todayKey}`);
+      if (savedToday) {
+        const parsed = JSON.parse(savedToday);
+        if (parsed.entryTime) return;
+      }
+      
+      // Perform check-in
+      handleCheckIn();
+    };
+    
+    const handleBeaconCheckOut = () => {
+      // Use existing check-out logic
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      
+      // Skip weekends
+      if (dayOfWeek === 5 || dayOfWeek === 6) return;
+      
+      // Skip if not checked in or already checked out
+      if (!todayData.entryTime) return;
+      
+      const todayKey = getDateKey(now);
+      const existingRecord = records.find((r) => r.date === todayKey);
+      if (existingRecord?.actualExitTime) return;
+      
+      // Perform check-out
+      handleCheckOut();
+    };
+    
+    window.addEventListener('beaconAutoCheckIn', handleBeaconCheckIn);
+    window.addEventListener('beaconAutoCheckOut', handleBeaconCheckOut);
+    
+    return () => {
+      window.removeEventListener('beaconAutoCheckIn', handleBeaconCheckIn);
+      window.removeEventListener('beaconAutoCheckOut', handleBeaconCheckOut);
+    };
+  }, [todayData, records]);
+
   // Load data from localStorage
   useEffect(() => {
     const loadData = () => {
@@ -394,7 +444,7 @@ const Index = () => {
   }, [todayData, records, saveRecords]);
 
   // Check-in handler
-  const handleCheckIn = () => {
+  const handleCheckIn = useCallback(() => {
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0 = الأحد, 5 = الجمعة, 6 = السبت
 
@@ -484,10 +534,10 @@ const Index = () => {
     toast.success("تم تسجيل الدخول بنجاح", {
       description: `وقت الدخول: ${entryTime}`,
     });
-  };
+  }, [todayData.entryTime, records, saveTodayData, saveRecords]);
 
   // Check-out handler
-  const handleCheckOut = () => {
+  const handleCheckOut = useCallback(() => {
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0 = الأحد, 5 = الجمعة, 6 = السبت
 
@@ -554,7 +604,7 @@ const Index = () => {
         ? "خروج نظامي - أحسنت!" 
         : "خروج مبكر - يرجى الالتزام بالدوام",
     });
-  };
+  }, [todayData, records, saveRecords]);
 
   const getStatusColor = (status: string | null) => {
     switch (status) {
