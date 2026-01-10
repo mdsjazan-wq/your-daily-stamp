@@ -4,6 +4,10 @@ import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
 import { stopAlarmSound } from "./lib/notifications";
+import { initializeNativePermissions } from "./lib/nativePermissions";
+
+// طلب الأذونات تلقائياً عند أول فتح للتطبيق (Native فقط)
+initializeNativePermissions();
 
 // تسجيل Service Worker للعمل بدون إنترنت
 registerSW({ immediate: true });
