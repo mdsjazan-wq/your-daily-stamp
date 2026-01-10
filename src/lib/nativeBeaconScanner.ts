@@ -26,6 +26,19 @@ export type ScanErrorCallback = (error: Error) => void;
 let isScanning = false;
 let scanTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
+// BLE init state (Capacitor plugin requires initialize() before most calls)
+let bleInitialized = false;
+
+const ensureBleInitialized = async () => {
+  const { BleClient } = await import('@capacitor-community/bluetooth-le');
+  if (!bleInitialized) {
+    // IMPORTANT: Do NOT use androidNeverForLocation as it can filter iBeacons.
+    await BleClient.initialize();
+    bleInitialized = true;
+  }
+  return { BleClient };
+};
+
 /**
  * Check if running on Native platform
  */
@@ -48,30 +61,26 @@ export const requestBeaconPermissions = async (): Promise<{
   }
 
   try {
-    const { BleClient } = await import('@capacitor-community/bluetooth-le');
     const { Capacitor } = await import('@capacitor/core');
-    
+    const { BleClient } = await ensureBleInitialized();
+
     // 1. Check location services on Android (required for BLE scanning)
     if (Capacitor.getPlatform() === 'android') {
       try {
-        const isLocationEnabled = await BleClient.isLocationEnabled();
-        if (!isLocationEnabled) {
-          return { 
-            granted: false, 
+        const locationEnabled = await BleClient.isLocationEnabled();
+        if (!locationEnabled) {
+          return {
+            granted: false,
             message: 'يرجى تفعيل خدمات الموقع للبحث عن أجهزة Beacon',
-            needsLocationSettings: true
+            needsLocationSettings: true,
           };
         }
       } catch (locError) {
         console.log('Location check not supported, continuing...', locError);
       }
     }
-    
-    // 2. Initialize BLE - this triggers permission requests on Android
-    // IMPORTANT: Do NOT use androidNeverForLocation as it filters iBeacons!
-    await BleClient.initialize();
-    
-    // 3. Check if Bluetooth is enabled
+
+    // 2. Check if Bluetooth is enabled
     const isEnabled = await BleClient.isEnabled();
     if (!isEnabled) {
       try {
@@ -85,15 +94,19 @@ export const requestBeaconPermissions = async (): Promise<{
   } catch (error) {
     console.error('Permission request error:', error);
     const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
-    
-    if (errorMsg.includes('permission') || errorMsg.includes('denied') || errorMsg.includes('Permission')) {
-      return { 
-        granted: false, 
+
+    if (
+      errorMsg.includes('permission') ||
+      errorMsg.includes('denied') ||
+      errorMsg.includes('Permission')
+    ) {
+      return {
+        granted: false,
         message: 'يرجى منح صلاحيات البلوتوث والموقع من إعدادات التطبيق',
-        needsAppSettings: true
+        needsAppSettings: true,
       };
     }
-    
+
     return { granted: false, message: `خطأ: ${errorMsg}` };
   }
 };
@@ -118,8 +131,8 @@ export const startBeaconScan = async (
   }
 
   try {
-    const { BleClient } = await import('@capacitor-community/bluetooth-le');
-    
+    const { BleClient } = await ensureBleInitialized();
+
     isScanning = true;
 
     // Start general BLE scan (no service UUID filter for iBeacon)
@@ -130,7 +143,7 @@ export const startBeaconScan = async (
       (result) => {
         // Extract manufacturer data
         const manufacturerData: { [key: string]: number[] } = {};
-        
+
         if (result.manufacturerData) {
           Object.entries(result.manufacturerData).forEach(([key, value]) => {
             if (value instanceof DataView) {
@@ -166,7 +179,6 @@ export const startBeaconScan = async (
     scanTimeoutId = setTimeout(async () => {
       await stopBeaconScan();
     }, durationMs);
-
   } catch (error) {
     isScanning = false;
     console.error('Beacon scan error:', error);
@@ -186,7 +198,7 @@ export const stopBeaconScan = async (): Promise<void> => {
   if (!isScanning) return;
 
   try {
-    const { BleClient } = await import('@capacitor-community/bluetooth-le');
+    const { BleClient } = await ensureBleInitialized();
     await BleClient.stopLEScan();
   } catch (error) {
     console.error('Error stopping scan:', error);
@@ -209,7 +221,7 @@ export const isBluetoothEnabled = async (): Promise<boolean> => {
   if (!isNativePlatform()) return false;
 
   try {
-    const { BleClient } = await import('@capacitor-community/bluetooth-le');
+    const { BleClient } = await ensureBleInitialized();
     return await BleClient.isEnabled();
   } catch {
     return false;
@@ -223,7 +235,7 @@ export const requestEnableBluetooth = async (): Promise<boolean> => {
   if (!isNativePlatform()) return false;
 
   try {
-    const { BleClient } = await import('@capacitor-community/bluetooth-le');
+    const { BleClient } = await ensureBleInitialized();
     await BleClient.requestEnable();
     return true;
   } catch {
@@ -238,7 +250,7 @@ export const openLocationSettings = async (): Promise<void> => {
   if (!isNativePlatform()) return;
 
   try {
-    const { BleClient } = await import('@capacitor-community/bluetooth-le');
+    const { BleClient } = await ensureBleInitialized();
     await BleClient.openLocationSettings();
   } catch (error) {
     console.error('Error opening location settings:', error);
@@ -252,7 +264,7 @@ export const openAppSettings = async (): Promise<void> => {
   if (!isNativePlatform()) return;
 
   try {
-    const { BleClient } = await import('@capacitor-community/bluetooth-le');
+    const { BleClient } = await ensureBleInitialized();
     await BleClient.openAppSettings();
   } catch (error) {
     console.error('Error opening app settings:', error);
@@ -266,7 +278,7 @@ export const isLocationEnabled = async (): Promise<boolean> => {
   if (!isNativePlatform()) return true;
 
   try {
-    const { BleClient } = await import('@capacitor-community/bluetooth-le');
+    const { BleClient } = await ensureBleInitialized();
     return await BleClient.isLocationEnabled();
   } catch {
     // If not supported, assume enabled
