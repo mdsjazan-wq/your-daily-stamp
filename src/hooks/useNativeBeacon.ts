@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { isNativePlatform } from '@/lib/nativeBleService';
-import { FIXED_BEACON_UUID, TEST_SCAN_DURATION_MS, formatDistanceArabic, calculateDistanceFromRssi } from '@/lib/beaconConstants';
+import { FIXED_BEACON_UUID, TEST_SCAN_DURATION_MS, formatDistanceArabic, calculateDistanceFromRssi, DEFAULT_RSSI_ENTRY_THRESHOLD, DEFAULT_MIN_WORK_DURATION_HOURS, RSSI_PRESETS } from '@/lib/beaconConstants';
 import { 
   startBeaconScan, 
   stopBeaconScan, 
@@ -50,6 +50,8 @@ export interface NativeBeaconSettings {
   enabled: boolean;
   autoCheckIn: boolean;
   autoCheckOut: boolean;
+  rssiThreshold: number;        // RSSI threshold for range detection
+  minWorkHours: number;         // Minimum work hours before auto check-out
 }
 
 // Storage key for settings
@@ -61,7 +63,17 @@ const SETTINGS_STORAGE_KEY = 'nativeBeaconSettings';
 const getStoredSettings = (): NativeBeaconSettings => {
   try {
     const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Merge with defaults for backward compatibility
+      return {
+        enabled: parsed.enabled ?? false,
+        autoCheckIn: parsed.autoCheckIn ?? true,
+        autoCheckOut: parsed.autoCheckOut ?? true,
+        rssiThreshold: parsed.rssiThreshold ?? DEFAULT_RSSI_ENTRY_THRESHOLD,
+        minWorkHours: parsed.minWorkHours ?? DEFAULT_MIN_WORK_DURATION_HOURS,
+      };
+    }
   } catch {
     // Ignore
   }
@@ -69,6 +81,8 @@ const getStoredSettings = (): NativeBeaconSettings => {
     enabled: false,
     autoCheckIn: true,
     autoCheckOut: true,
+    rssiThreshold: DEFAULT_RSSI_ENTRY_THRESHOLD,
+    minWorkHours: DEFAULT_MIN_WORK_DURATION_HOURS,
   };
 };
 
@@ -415,6 +429,7 @@ export const useNativeBeacon = () => {
 
     // Constants
     fixedUuid: FIXED_BEACON_UUID,
+    rssiPresets: RSSI_PRESETS,
 
     // Actions
     requestPermissions,

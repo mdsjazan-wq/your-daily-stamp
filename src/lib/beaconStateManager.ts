@@ -4,18 +4,51 @@
  */
 
 import {
-  RSSI_ENTRY_THRESHOLD,
+  DEFAULT_RSSI_ENTRY_THRESHOLD,
   RSSI_EXIT_THRESHOLD,
-  EXIT_CONFIRM_SECONDS,
-  SCAN_INTERVAL_SECONDS,
   CONSECUTIVE_READS_REQUIRED,
   DEBOUNCE_DURATION_MS,
-  MIN_WORK_DURATION_HOURS,
+  DEFAULT_MIN_WORK_DURATION_HOURS,
   WORK_START_HOUR,
   WEEKEND_DAYS,
   calculateDistanceFromRssi,
   formatDistanceArabic,
 } from './beaconConstants';
+
+// Settings storage key (shared with hook)
+const SETTINGS_STORAGE_KEY = 'nativeBeaconSettings';
+
+/**
+ * Get user-configured RSSI threshold (or default)
+ */
+const getRssiThreshold = (): number => {
+  try {
+    const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (saved) {
+      const settings = JSON.parse(saved);
+      return settings.rssiThreshold ?? DEFAULT_RSSI_ENTRY_THRESHOLD;
+    }
+  } catch {
+    // Ignore
+  }
+  return DEFAULT_RSSI_ENTRY_THRESHOLD;
+};
+
+/**
+ * Get user-configured minimum work hours (or default)
+ */
+const getMinWorkHours = (): number => {
+  try {
+    const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (saved) {
+      const settings = JSON.parse(saved);
+      return settings.minWorkHours ?? DEFAULT_MIN_WORK_DURATION_HOURS;
+    }
+  } catch {
+    // Ignore
+  }
+  return DEFAULT_MIN_WORK_DURATION_HOURS;
+};
 
 // Range state interface
 export interface BeaconRangeState {
@@ -88,8 +121,9 @@ export const processScanResultNative = (
     state.lastSeen = now;
     state.lastDistance = calculateDistanceFromRssi(rssi);
 
-    // Check if RSSI indicates in-range (use entry threshold)
-    const isCurrentlyInRange = rssi >= RSSI_ENTRY_THRESHOLD;
+    // Check if RSSI indicates in-range (use user-configured threshold)
+    const rssiThreshold = getRssiThreshold();
+    const isCurrentlyInRange = rssi >= rssiThreshold;
 
     if (isCurrentlyInRange) {
       state.consecutiveInRangeCount++;
@@ -209,7 +243,9 @@ export const hasMinimumWorkDuration = (): boolean => {
   const now = new Date();
   const hoursSinceCheckIn = (now.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
   
-  return hoursSinceCheckIn >= MIN_WORK_DURATION_HOURS;
+  // Use user-configured minimum work hours
+  const minHours = getMinWorkHours();
+  return hoursSinceCheckIn >= minHours;
 };
 
 /**
