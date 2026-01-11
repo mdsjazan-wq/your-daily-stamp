@@ -23,12 +23,15 @@ export const RSSI_PRESETS = {
   far: { value: -90, label: 'بعيد (~10 متر)' },
 } as const;
 
-// Timing constants (fixed for stability)
-export const SCAN_INTERVAL_SECONDS = 5;      // How often to scan
-export const SCAN_DURATION_MS = 3000;        // Each scan duration
+// Timing constants (optimized for faster response)
+export const SCAN_INTERVAL_SECONDS = 2;      // How often to scan (reduced for faster detection)
+export const SCAN_DURATION_MS = 2000;        // Each scan duration (reduced)
 export const EXIT_CONFIRM_SECONDS = 300;     // 5 minutes wait time before confirming exit (prevents accidental exits)
-export const CONSECUTIVE_READS_REQUIRED = 3; // Required consecutive in-range readings for entry
+export const CONSECUTIVE_READS_REQUIRED = 2; // Required consecutive in-range readings for entry (reduced from 3)
 export const DEBOUNCE_DURATION_MS = 30 * 60 * 1000; // 30 minutes debounce between events (allows check-out after check-in)
+
+// Immediate registration threshold (very strong signal = instant registration)
+export const IMMEDIATE_RSSI_THRESHOLD = -50; // dBm - instant registration when RSSI >= this
 
 // Business rules constants (defaults - can be overridden by user settings)
 export const DEFAULT_MIN_WORK_DURATION_HOURS = 4;    // Minimum hours before allowing auto check-out

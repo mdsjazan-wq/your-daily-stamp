@@ -135,10 +135,13 @@ export const startBeaconScan = async (
 
     isScanning = true;
 
-    // Start general BLE scan (no service UUID filter for iBeacon)
+    // Import ScanMode for low latency scanning
+    const { ScanMode } = await import('@capacitor-community/bluetooth-le');
+
+    // Start general BLE scan with low latency mode for faster detection
     await BleClient.requestLEScan(
       {
-        // No filters - we filter by manufacturer data ourselves
+        scanMode: ScanMode.SCAN_MODE_LOW_LATENCY, // Fastest response time
       },
       (result) => {
         // Extract manufacturer data

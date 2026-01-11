@@ -11,6 +11,7 @@ import {
   DEFAULT_MIN_WORK_DURATION_HOURS,
   WORK_START_HOUR,
   WEEKEND_DAYS,
+  IMMEDIATE_RSSI_THRESHOLD,
   calculateDistanceFromRssi,
   formatDistanceArabic,
 } from './beaconConstants';
@@ -124,13 +125,28 @@ export const processScanResultNative = (
     // Check if RSSI indicates in-range (use user-configured threshold)
     const rssiThreshold = getRssiThreshold();
     const isCurrentlyInRange = rssi >= rssiThreshold;
+    
+    // Check for very strong signal (immediate registration)
+    const isVeryStrongSignal = rssi >= IMMEDIATE_RSSI_THRESHOLD;
 
     if (isCurrentlyInRange) {
       state.consecutiveInRangeCount++;
       state.consecutiveOutRangeCount = 0;
 
+      // Immediate registration for very strong signals (when not already in range)
+      if (isVeryStrongSignal && !state.isInRange) {
+        const canEnter = !state.lastEnterAt || 
+          (Date.now() - new Date(state.lastEnterAt).getTime()) > DEBOUNCE_DURATION_MS;
+
+        if (canEnter) {
+          state.isInRange = true;
+          state.lastEnterAt = now;
+          event = 'enter';
+          console.log(`⚡ Immediate entry: RSSI ${rssi} >= ${IMMEDIATE_RSSI_THRESHOLD}`);
+        }
+      }
       // Check for entry event (used for both check-in AND check-out at entrance)
-      if (!state.isInRange && state.consecutiveInRangeCount >= CONSECUTIVE_READS_REQUIRED) {
+      else if (!state.isInRange && state.consecutiveInRangeCount >= CONSECUTIVE_READS_REQUIRED) {
         // Check debounce
         const canEnter = !state.lastEnterAt || 
           (Date.now() - new Date(state.lastEnterAt).getTime()) > DEBOUNCE_DURATION_MS;
@@ -139,6 +155,7 @@ export const processScanResultNative = (
           state.isInRange = true;
           state.lastEnterAt = now;
           event = 'enter'; // Always 'enter' - attendance type determined later
+          console.log(`✅ Consecutive entry: ${state.consecutiveInRangeCount} reads, RSSI ${rssi}`);
         }
       }
     } else {
