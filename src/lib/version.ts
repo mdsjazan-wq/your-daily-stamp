@@ -1,5 +1,5 @@
 // رقم النسخة يتبع تنسيق: major.minor.patch
-export const APP_VERSION = "1.0.8";
+export const APP_VERSION = "1.0.9";
 
 // معرف البناء التلقائي (يتغير مع كل نشر)
 export const APP_BUILD_ID = import.meta.env.VITE_BUILD_TIME || "dev";
