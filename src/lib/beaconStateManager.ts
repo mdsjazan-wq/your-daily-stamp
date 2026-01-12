@@ -19,6 +19,9 @@ import {
 // Settings storage key (shared with hook)
 const SETTINGS_STORAGE_KEY = 'nativeBeaconSettings';
 
+// Shorter debounce for very strong signals (5 minutes instead of 30)
+const STRONG_SIGNAL_DEBOUNCE_MS = 5 * 60 * 1000;
+
 /**
  * Get user-configured RSSI threshold (or default)
  */
@@ -129,14 +132,24 @@ export const processScanResultNative = (
     // Check for very strong signal (immediate registration)
     const isVeryStrongSignal = rssi >= IMMEDIATE_RSSI_THRESHOLD;
 
+    // Diagnostic logging
+    console.log(`📊 Scan: RSSI=${rssi}, threshold=${rssiThreshold}, immediateThreshold=${IMMEDIATE_RSSI_THRESHOLD}`);
+    console.log(`📊 State: isInRange=${state.isInRange}, consecutiveIn=${state.consecutiveInRangeCount}`);
+    console.log(`📊 Checks: isVeryStrong=${isVeryStrongSignal}, isCurrentlyInRange=${isCurrentlyInRange}`);
+
     if (isCurrentlyInRange) {
       state.consecutiveInRangeCount++;
       state.consecutiveOutRangeCount = 0;
 
       // Immediate registration for very strong signals (when not already in range)
       if (isVeryStrongSignal && !state.isInRange) {
-        const canEnter = !state.lastEnterAt || 
-          (Date.now() - new Date(state.lastEnterAt).getTime()) > DEBOUNCE_DURATION_MS;
+        // Use shorter debounce for very strong signals
+        const timeSinceLastEnter = state.lastEnterAt 
+          ? Date.now() - new Date(state.lastEnterAt).getTime() 
+          : Infinity;
+        const canEnter = timeSinceLastEnter > STRONG_SIGNAL_DEBOUNCE_MS;
+
+        console.log(`📊 Immediate entry check: timeSince=${Math.round(timeSinceLastEnter/1000)}s, requiredDebounce=${STRONG_SIGNAL_DEBOUNCE_MS/1000}s, canEnter=${canEnter}`);
 
         if (canEnter) {
           state.isInRange = true;
@@ -147,7 +160,7 @@ export const processScanResultNative = (
       }
       // Check for entry event (used for both check-in AND check-out at entrance)
       else if (!state.isInRange && state.consecutiveInRangeCount >= CONSECUTIVE_READS_REQUIRED) {
-        // Check debounce
+        // Check debounce (full 30 min for normal signals)
         const canEnter = !state.lastEnterAt || 
           (Date.now() - new Date(state.lastEnterAt).getTime()) > DEBOUNCE_DURATION_MS;
 

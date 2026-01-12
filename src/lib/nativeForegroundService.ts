@@ -71,7 +71,10 @@ const performBackgroundScan = async (): Promise<void> => {
     }
   );
 
-  // Stop scan after duration (no extra delay needed)
+  // Wait for scan to complete before stopping
+  await new Promise(resolve => setTimeout(resolve, SCAN_DURATION_MS + 200));
+  
+  // Stop scan after duration
   await stopBeaconScan();
 
   // Process the result
