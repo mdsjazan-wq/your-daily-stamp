@@ -67,7 +67,7 @@ const getStoredSettings = (): NativeBeaconSettings => {
       const parsed = JSON.parse(saved);
       // Merge with defaults for backward compatibility
       return {
-        enabled: parsed.enabled ?? false,
+        enabled: parsed.enabled ?? true, // Default to TRUE (enabled by default)
         autoCheckIn: parsed.autoCheckIn ?? true,
         autoCheckOut: parsed.autoCheckOut ?? true,
         rssiThreshold: parsed.rssiThreshold ?? DEFAULT_RSSI_ENTRY_THRESHOLD,
@@ -78,7 +78,7 @@ const getStoredSettings = (): NativeBeaconSettings => {
     // Ignore
   }
   return {
-    enabled: false,
+    enabled: true, // Default to TRUE (enabled by default)
     autoCheckIn: true,
     autoCheckOut: true,
     rssiThreshold: DEFAULT_RSSI_ENTRY_THRESHOLD,
@@ -129,7 +129,19 @@ export const useNativeBeacon = () => {
         setBluetoothOn(btEnabled);
 
         // Check stored service state
-        setServiceRunning(isBeaconServiceRunning() || getStoredServiceState());
+        const storedSettings = getStoredSettings();
+        const isRunning = isBeaconServiceRunning() || getStoredServiceState();
+        setServiceRunning(isRunning);
+
+        // Auto-start service if enabled in settings and Bluetooth is on
+        if (storedSettings.enabled && btEnabled && !isRunning) {
+          console.log('🚀 Auto-starting Beacon service...');
+          const started = await startBeaconService();
+          setServiceRunning(started);
+          if (started) {
+            console.log('✅ Beacon service auto-started successfully');
+          }
+        }
       }
 
       setIsLoading(false);
