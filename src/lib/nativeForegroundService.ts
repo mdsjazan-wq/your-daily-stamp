@@ -14,6 +14,7 @@ import { SCAN_INTERVAL_SECONDS, SCAN_DURATION_MS, FIXED_BEACON_UUID } from './be
 import { playEntrySound, playExitSound, getAudioSettings } from './beaconAudio';
 import { showNotification } from './nativeNotifications';
 import { logBeaconEvent, registerBeaconAttendance } from './beaconService';
+import { addDiagnosticEntry } from './beaconDiagnostics';
 
 // Service state
 let isServiceRunning = false;
@@ -57,6 +58,8 @@ export const setStateChangeCallback = (callback: ((state: BeaconRangeState) => v
 const performBackgroundScan = async (): Promise<void> => {
   let targetBeacon: ScannedBeacon | null = null;
 
+  addDiagnosticEntry('scan_start', 'بدء المسح الدوري');
+
   await startBeaconScan(
     SCAN_DURATION_MS,
     (beacon) => {
@@ -66,6 +69,10 @@ const performBackgroundScan = async (): Promise<void> => {
         if (!targetBeacon || beacon.rssi > targetBeacon.rssi) {
           targetBeacon = beacon;
           console.log(`📡 Beacon detected: RSSI ${beacon.rssi}`);
+          addDiagnosticEntry('beacon_found', `تم اكتشاف Beacon`, { 
+            rssi: beacon.rssi,
+            details: { deviceId: beacon.deviceId, matchesTarget: beacon.matchesTarget }
+          });
         }
       }
     }
@@ -79,7 +86,12 @@ const performBackgroundScan = async (): Promise<void> => {
 
   // Process the result
   const rssi = targetBeacon?.rssi ?? null;
-  console.log(`🔍 Scan complete: RSSI = ${rssi ?? 'not found'}`);
+  
+  if (rssi === null) {
+    addDiagnosticEntry('scan_end', 'انتهى المسح - لم يتم العثور على الجهاز');
+  } else {
+    addDiagnosticEntry('scan_end', `انتهى المسح - RSSI: ${rssi}`, { rssi });
+  }
   
   const { event, state } = processScanResultNative(rssi);
   console.log(`📊 State: inRange=${state.isInRange}, consecutiveIn=${state.consecutiveInRangeCount}`);
@@ -90,6 +102,7 @@ const performBackgroundScan = async (): Promise<void> => {
   // Handle entry event - determine if check-in or check-out
   if (event === 'enter') {
     console.log(`🚀 Entry event triggered!`);
+    addDiagnosticEntry('entry', 'دخول نطاق Beacon', { rssi, details: { state: state.isInRange } });
     await handleRangeEnter();
   }
 };
@@ -102,6 +115,7 @@ const handleRangeEnter = async (): Promise<void> => {
   // Skip on weekends
   if (!isWorkingDay()) {
     console.log('Beacon range entered: Skipping - weekend day');
+    addDiagnosticEntry('info', 'تخطي - يوم إجازة');
     return;
   }
 
@@ -115,6 +129,7 @@ const handleRangeEnter = async (): Promise<void> => {
   } else {
     // Already checked in but conditions not met for check-out
     console.log('Beacon range entered: Check-in already done, check-out conditions not met');
+    addDiagnosticEntry('info', 'تم تسجيل الحضور سابقاً - شروط الانصراف غير مستوفاة');
   }
 };
 
@@ -125,8 +140,11 @@ const handleAutoCheckIn = async (): Promise<void> => {
   // Skip check-in on weekends
   if (!isWorkingDay()) {
     console.log('Skipping auto check-in: weekend');
+    addDiagnosticEntry('info', 'تخطي تسجيل الحضور - يوم إجازة');
     return;
   }
+
+  addDiagnosticEntry('check_in', '✅ تسجيل حضور تلقائي');
 
   const audioSettings = getAudioSettings();
   
@@ -160,14 +178,18 @@ const handleAutoCheckOut = async (): Promise<void> => {
   const exitCheck = isExitTimeAllowed();
   if (!exitCheck.allowed) {
     console.log(`Skipping auto check-out: ${exitCheck.reason}`);
+    addDiagnosticEntry('info', `تخطي تسجيل الانصراف - ${exitCheck.reason}`);
     return;
   }
 
   // Check minimum work duration (4 hours)
   if (!hasMinimumWorkDuration()) {
     console.log('Skipping auto check-out: minimum work duration not met (4 hours required)');
+    addDiagnosticEntry('info', 'تخطي تسجيل الانصراف - لم تكتمل المدة المطلوبة');
     return;
   }
+
+  addDiagnosticEntry('check_out', '👋 تسجيل انصراف تلقائي');
 
   const audioSettings = getAudioSettings();
   
