@@ -524,27 +524,6 @@ const NativeBeaconSettings = () => {
               </div>
             )}
 
-            {/* Reset State Button */}
-            <Separator className="my-4" />
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">إعادة ضبط الحالة</p>
-                <p className="text-xs text-muted-foreground">لإعادة تفعيل الكشف بعد مشاكل</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const { resetBeaconRangeState } = require('@/lib/beaconStateManager');
-                  resetBeaconRangeState();
-                  toast.success('تم إعادة ضبط حالة Beacon');
-                  window.location.reload();
-                }}
-              >
-                إعادة ضبط
-              </Button>
-            </div>
-
             {/* Manual Registration */}
             <Separator className="my-4" />
             <p className="text-sm font-medium text-foreground mb-3">تسجيل يدوي</p>
