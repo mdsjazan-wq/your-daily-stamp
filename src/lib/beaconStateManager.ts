@@ -19,8 +19,8 @@ import {
 // Settings storage key (shared with hook)
 const SETTINGS_STORAGE_KEY = 'nativeBeaconSettings';
 
-// Shorter debounce for very strong signals (5 minutes instead of 30)
-const STRONG_SIGNAL_DEBOUNCE_MS = 5 * 60 * 1000;
+// NO debounce for very strong signals (instant registration for testing)
+const STRONG_SIGNAL_DEBOUNCE_MS = 0; // Instant - no waiting
 
 /**
  * Get user-configured RSSI threshold (or default)
@@ -141,22 +141,13 @@ export const processScanResultNative = (
       state.consecutiveInRangeCount++;
       state.consecutiveOutRangeCount = 0;
 
-      // Immediate registration for very strong signals (when not already in range)
+      // Immediate registration for strong signals (when not already in range)
+      // NO DEBOUNCE - instant registration for testing
       if (isVeryStrongSignal && !state.isInRange) {
-        // Use shorter debounce for very strong signals
-        const timeSinceLastEnter = state.lastEnterAt 
-          ? Date.now() - new Date(state.lastEnterAt).getTime() 
-          : Infinity;
-        const canEnter = timeSinceLastEnter > STRONG_SIGNAL_DEBOUNCE_MS;
-
-        console.log(`📊 Immediate entry check: timeSince=${Math.round(timeSinceLastEnter/1000)}s, requiredDebounce=${STRONG_SIGNAL_DEBOUNCE_MS/1000}s, canEnter=${canEnter}`);
-
-        if (canEnter) {
-          state.isInRange = true;
-          state.lastEnterAt = now;
-          event = 'enter';
-          console.log(`⚡ Immediate entry: RSSI ${rssi} >= ${IMMEDIATE_RSSI_THRESHOLD}`);
-        }
+        state.isInRange = true;
+        state.lastEnterAt = now;
+        event = 'enter';
+        console.log(`⚡ INSTANT entry: RSSI ${rssi} >= ${IMMEDIATE_RSSI_THRESHOLD} (no debounce)`);
       }
       // Check for entry event (used for both check-in AND check-out at entrance)
       else if (!state.isInRange && state.consecutiveInRangeCount >= CONSECUTIVE_READS_REQUIRED) {

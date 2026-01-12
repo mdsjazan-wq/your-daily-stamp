@@ -23,15 +23,15 @@ export const RSSI_PRESETS = {
   far: { value: -90, label: 'بعيد (~10 متر)' },
 } as const;
 
-// Timing constants (optimized for faster response)
-export const SCAN_INTERVAL_SECONDS = 2;      // How often to scan (reduced for faster detection)
-export const SCAN_DURATION_MS = 2000;        // Each scan duration (reduced)
+// Timing constants (MAXIMUM SPEED - minimal constraints for testing)
+export const SCAN_INTERVAL_SECONDS = 1;      // How often to scan (every second)
+export const SCAN_DURATION_MS = 1500;        // Each scan duration (1.5 seconds)
 export const EXIT_CONFIRM_SECONDS = 300;     // 5 minutes wait time before confirming exit (prevents accidental exits)
-export const CONSECUTIVE_READS_REQUIRED = 2; // Required consecutive in-range readings for entry (reduced from 3)
-export const DEBOUNCE_DURATION_MS = 30 * 60 * 1000; // 30 minutes debounce between events (allows check-out after check-in)
+export const CONSECUTIVE_READS_REQUIRED = 1; // Single reading is enough for entry
+export const DEBOUNCE_DURATION_MS = 1 * 60 * 1000; // 1 minute debounce (for testing)
 
-// Immediate registration threshold (very strong signal = instant registration)
-export const IMMEDIATE_RSSI_THRESHOLD = -50; // dBm - instant registration when RSSI >= this
+// Immediate registration threshold (expanded range for faster detection)
+export const IMMEDIATE_RSSI_THRESHOLD = -70; // dBm - instant registration when RSSI >= this
 
 // Business rules constants (defaults - can be overridden by user settings)
 export const DEFAULT_MIN_WORK_DURATION_HOURS = 4;    // Minimum hours before allowing auto check-out
@@ -47,7 +47,7 @@ export const TX_POWER_AT_1M = -59; // RSSI at 1 meter (calibrated for iBeacon)
 export const PATH_LOSS_EXPONENT = 2.2; // Environmental factor (2.0-4.0)
 
 // Test scan duration
-export const TEST_SCAN_DURATION_MS = 12000; // 12 seconds for user-initiated scan
+export const TEST_SCAN_DURATION_MS = 5000; // 5 seconds for user-initiated scan (faster testing)
 
 /**
  * Calculate approximate distance from RSSI

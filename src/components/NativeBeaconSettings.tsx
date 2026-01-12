@@ -464,7 +464,7 @@ const NativeBeaconSettings = () => {
               ) : (
                 <>
                   <Bluetooth className="w-4 h-4 ml-2" />
-                  بحث عن الأجهزة (12 ثانية)
+                  بحث عن الأجهزة (5 ثانية)
                 </>
               )}
             </Button>
