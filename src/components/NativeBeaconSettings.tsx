@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import useNativeBeacon from '@/hooks/useNativeBeacon';
 import { playTestSound } from '@/lib/beaconAudio';
+import BeaconDiagnosticsLog from '@/components/BeaconDiagnosticsLog';
 
 const NativeBeaconSettings = () => {
   const {
@@ -596,6 +597,9 @@ const NativeBeaconSettings = () => {
               </AlertDialog>
             </div>
           </div>
+
+          {/* Diagnostics Log */}
+          <BeaconDiagnosticsLog />
 
           {/* Battery Optimization Guide */}
           <div className="bg-card rounded-3xl shadow-card p-6">
