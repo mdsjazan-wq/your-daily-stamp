@@ -2,9 +2,8 @@
  * Native Foreground Service Manager
  * Handles background BLE scanning on Android using Capacitor
  * 
- * Note: True foreground service requires native Android code.
- * This module provides the TypeScript interface and uses available
- * Capacitor plugins for background task management.
+ * Now uses @capawesome-team/capacitor-android-foreground-service
+ * for TRUE background operation with screen locked.
  */
 
 import { isNativePlatform } from './nativeBleService';
@@ -15,6 +14,7 @@ import { playEntrySound, playExitSound, getAudioSettings } from './beaconAudio';
 import { showNotification } from './nativeNotifications';
 import { logBeaconEvent, registerBeaconAttendance } from './beaconService';
 import { addDiagnosticEntry } from './beaconDiagnostics';
+import { startNativeForegroundService, stopNativeForegroundService } from './androidForegroundService';
 
 // Service state
 let isServiceRunning = false;
@@ -230,6 +230,11 @@ export const startBeaconService = async (): Promise<boolean> => {
   }
 
   try {
+    // Start the native foreground service FIRST for true background operation
+    await startNativeForegroundService();
+    
+    addDiagnosticEntry('info', '🚀 بدء خدمة المراقبة في الخلفية');
+
     // Show persistent notification (required for foreground service)
     await showNotification({
       title: 'التسجيل التلقائي قيد التشغيل',
@@ -248,10 +253,11 @@ export const startBeaconService = async (): Promise<boolean> => {
     isServiceRunning = true;
     saveServiceState(true);
     
-    console.log('Beacon service started');
+    console.log('Beacon service started with native foreground service');
     return true;
   } catch (error) {
     console.error('Failed to start beacon service:', error);
+    addDiagnosticEntry('error', `فشل بدء الخدمة: ${error}`);
     return false;
   }
 };
@@ -267,6 +273,9 @@ export const stopBeaconService = async (): Promise<void> => {
 
   await stopBeaconScan();
 
+  // Stop the native foreground service
+  await stopNativeForegroundService();
+
   // Cancel persistent notification
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications');
@@ -278,6 +287,7 @@ export const stopBeaconService = async (): Promise<void> => {
   isServiceRunning = false;
   saveServiceState(false);
   
+  addDiagnosticEntry('info', '⏹️ تم إيقاف خدمة المراقبة');
   console.log('Beacon service stopped');
 };
 

@@ -268,13 +268,48 @@ export const registerBeaconAttendance = (type: 'entry' | 'exit'): void => {
     logBeaconEvent('enter', { time: timeArabic, time24, status });
     
   } else {
-    // Update exit time
+    // Update exit time in today data
     const todayData = localStorage.getItem(`today_${todayKey}`);
     if (todayData) {
       const data = JSON.parse(todayData);
       data.actualExitTime = timeArabic;
       data.source = 'beacon';
       localStorage.setItem(`today_${todayKey}`, JSON.stringify(data));
+    }
+    
+    // Also update attendanceRecords to show in history
+    const savedRecords = localStorage.getItem('attendanceRecords');
+    if (savedRecords) {
+      try {
+        const records = JSON.parse(savedRecords);
+        const todayRecordIndex = records.findIndex((r: { date: string }) => r.date === todayKey);
+        if (todayRecordIndex !== -1) {
+          records[todayRecordIndex].actualExitTime = timeArabic;
+          
+          // Calculate exit status
+          const expectedExitTime = records[todayRecordIndex].expectedExitTime;
+          if (expectedExitTime) {
+            const parseTime = (timeStr: string): number => {
+              const match = timeStr.match(/(\d+):(\d+)\s*(ص|م)/);
+              if (!match) return 0;
+              let hours = parseInt(match[1]);
+              const minutes = parseInt(match[2]);
+              const period = match[3];
+              if (period === 'م' && hours !== 12) hours += 12;
+              if (period === 'ص' && hours === 12) hours = 0;
+              return hours * 60 + minutes;
+            };
+            
+            const expectedMinutes = parseTime(expectedExitTime);
+            const actualMinutes = parseTime(timeArabic);
+            records[todayRecordIndex].exitStatus = actualMinutes < expectedMinutes ? 'خروج مبكر' : 'خروج نظامي';
+          }
+          
+          localStorage.setItem('attendanceRecords', JSON.stringify(records));
+        }
+      } catch (e) {
+        console.error('Error updating attendance records:', e);
+      }
     }
     
     // Log event

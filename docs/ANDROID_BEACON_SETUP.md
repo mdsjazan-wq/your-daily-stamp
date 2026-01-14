@@ -12,9 +12,9 @@ Add these permissions to `android/app/src/main/AndroidManifest.xml`:
 
     <!-- Bluetooth Permissions -->
     <!-- For Android 12+ (API 31+) -->
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" 
-        android:usesPermissionFlags="neverForLocation"
-        tools:targetApi="s" />
+    <!-- IMPORTANT: Do NOT use android:usesPermissionFlags="neverForLocation" as it weakens iBeacon detection -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     
     <!-- For Android 11 and below -->
