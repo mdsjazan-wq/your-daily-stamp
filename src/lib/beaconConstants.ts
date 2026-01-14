@@ -31,7 +31,7 @@ export const CONSECUTIVE_READS_REQUIRED = 1; // Single reading is enough for ent
 export const DEBOUNCE_DURATION_MS = 1 * 60 * 1000; // 1 minute debounce (for testing)
 
 // Immediate registration threshold (expanded range for faster detection)
-export const IMMEDIATE_RSSI_THRESHOLD = -70; // dBm - instant registration when RSSI >= this
+export const IMMEDIATE_RSSI_THRESHOLD = -85; // dBm - instant registration when RSSI >= this (expanded for pocket/bag detection)
 
 // Business rules constants (defaults - can be overridden by user settings)
 export const DEFAULT_MIN_WORK_DURATION_HOURS = 4;    // Minimum hours before allowing auto check-out
