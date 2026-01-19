@@ -1011,6 +1011,20 @@ const Settings = () => {
               </div>
             </div>
 
+            {/* Privacy Policy Link */}
+            <Link
+              to="/privacy"
+              className="flex items-center justify-between p-4 bg-card rounded-2xl shadow-card hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-primary" />
+                </div>
+                <span className="font-medium text-foreground">سياسة الخصوصية</span>
+              </div>
+              <ArrowRight className="w-5 h-5 text-muted-foreground rotate-180" />
+            </Link>
+
             {/* Footer */}
             <footer className="text-center py-4 space-y-1">
               <p className="text-xs text-muted-foreground">

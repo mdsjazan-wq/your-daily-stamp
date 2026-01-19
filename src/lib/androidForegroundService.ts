@@ -36,12 +36,12 @@ export const startNativeForegroundService = async (): Promise<boolean> => {
     
     await ForegroundService.startForegroundService({
       id: 1000,
-      title: 'التسجيل التلقائي قيد التشغيل',
-      body: 'يتم مراقبة Beacon للتسجيل التلقائي',
+      title: 'بصمتي: تتبع Beacon قيد التشغيل',
+      body: 'يتم مراقبة موقعك لتسجيل الحضور والانصراف تلقائياً',
       smallIcon: 'ic_stat_icon',
       buttons: [
         {
-          title: 'إيقاف',
+          title: 'إيقاف التتبع',
           id: 1,
         },
       ],

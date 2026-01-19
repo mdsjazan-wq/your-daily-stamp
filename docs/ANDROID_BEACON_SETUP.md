@@ -8,6 +8,26 @@ This document provides the complete setup instructions for enabling iBeacon dete
 
 هذا الفلاج يمنع اكتشاف iBeacons تماماً لأن Android يعتبر بيانات iBeacon بيانات موقع!
 
+## 📋 Google Play Compliance - Location Disclosure
+
+لاجتياز مراجعة Google Play، يجب:
+
+1. **In-app Disclosure**: عرض نافذة إفصاح واضحة قبل طلب أذونات الموقع
+2. **Foreground Service Notification**: إشعار دائم يوضح استخدام الموقع مع زر إيقاف
+3. **Privacy Policy**: صفحة سياسة خصوصية داخل التطبيق
+
+### النص المقترح لـ Google Play Console:
+
+**الهدف الرئيسي للتطبيق:**
+```
+تطبيق "بصمتي" هو نظام تسجيل حضور وانصراف للموظفين يستخدم تقنية Bluetooth Beacon للتحقق التلقائي من وجود الموظف في مقر العمل.
+```
+
+**الوصول إلى الموقع الجغرافي:**
+```
+يستخدم التطبيق إذن الموقع في الخلفية (ACCESS_BACKGROUND_LOCATION) لمسح أجهزة Bluetooth Beacon أثناء ساعات الدوام. عندما يفعّل المستخدم خيار "تتبع Beacon"، يقوم التطبيق بالتحقق من قربه من جهاز Beacon موجود في مدخل مقر العمل. لا يتم تتبع الموقع الجغرافي الفعلي للمستخدم - فقط التحقق من القرب من جهاز Beacon محدد. يمكن للمستخدم إيقاف هذه الميزة في أي وقت من الإعدادات أو من الإشعار الدائم.
+```
+
 ## 1. AndroidManifest.xml Permissions
 
 أضف هذه الصلاحيات في `android/app/src/main/AndroidManifest.xml`:
