@@ -1,11 +1,14 @@
 /**
  * Native Permissions - Request all required permissions on first app launch
  * Permissions: Bluetooth (Nearby Devices), Location, Notifications
+ * 
+ * Google Play Compliance: Location disclosure must be shown before requesting permissions
  */
 
 import { Capacitor } from '@capacitor/core';
 
 const PERMISSIONS_REQUESTED_KEY = 'native_permissions_requested_v1';
+const DISCLOSURE_ACCEPTED_KEY = 'location_disclosure_accepted_v1';
 
 /**
  * Check if we're running on a native platform
@@ -26,6 +29,27 @@ export const wasPermissionsRequested = (): boolean => {
  */
 export const markPermissionsRequested = (): void => {
   localStorage.setItem(PERMISSIONS_REQUESTED_KEY, 'true');
+};
+
+/**
+ * Check if location disclosure was accepted by user
+ */
+export const wasDisclosureAccepted = (): boolean => {
+  return localStorage.getItem(DISCLOSURE_ACCEPTED_KEY) === 'true';
+};
+
+/**
+ * Mark location disclosure as accepted
+ */
+export const markDisclosureAccepted = (): void => {
+  localStorage.setItem(DISCLOSURE_ACCEPTED_KEY, 'true');
+};
+
+/**
+ * Reset disclosure state (for testing)
+ */
+export const resetDisclosureState = (): void => {
+  localStorage.removeItem(DISCLOSURE_ACCEPTED_KEY);
 };
 
 /**

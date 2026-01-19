@@ -42,6 +42,7 @@ import {
 import useNativeBeacon from '@/hooks/useNativeBeacon';
 import { playTestSound } from '@/lib/beaconAudio';
 import BeaconDiagnosticsLog from '@/components/BeaconDiagnosticsLog';
+import LocationDisclosureDialog from '@/components/LocationDisclosureDialog';
 
 const NativeBeaconSettings = () => {
   const {
@@ -73,6 +74,7 @@ const NativeBeaconSettings = () => {
     // Actions
     enableBluetooth,
     toggleBeaconTracking,
+    acceptDisclosureAndEnable,
     performTestScan,
     performManualCheckIn,
     performManualCheckOut,
@@ -85,6 +87,7 @@ const NativeBeaconSettings = () => {
   } = useNativeBeacon();
 
   const [showBatteryGuide, setShowBatteryGuide] = useState(false);
+  const [showDisclosure, setShowDisclosure] = useState(false);
 
   // Show battery optimization guide on first enable
   useEffect(() => {
@@ -187,10 +190,27 @@ const NativeBeaconSettings = () => {
           </div>
           <Switch
             checked={settings.enabled}
-            onCheckedChange={(checked) => toggleBeaconTracking(checked)}
+            onCheckedChange={async (checked) => {
+              const result = await toggleBeaconTracking(checked);
+              if (result.needsDisclosure) {
+                setShowDisclosure(true);
+              }
+            }}
             disabled={!bluetoothOn}
           />
         </div>
+
+        {/* Location Disclosure Dialog */}
+        <LocationDisclosureDialog
+          open={showDisclosure}
+          onAccept={async () => {
+            setShowDisclosure(false);
+            await acceptDisclosureAndEnable();
+          }}
+          onDecline={() => {
+            setShowDisclosure(false);
+          }}
+        />
 
 
         {/* Service Status */}

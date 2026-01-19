@@ -37,6 +37,10 @@ import {
   getStoredServiceState,
 } from '@/lib/nativeForegroundService';
 import {
+  wasDisclosureAccepted,
+  markDisclosureAccepted,
+} from '@/lib/nativePermissions';
+import {
   playEntrySound,
   playExitSound,
   getAudioSettings,
@@ -254,27 +258,32 @@ export const useNativeBeacon = () => {
     await openLocationSettings();
   }, []);
 
-  // Toggle beacon tracking
-  const toggleBeaconTracking = useCallback(async (enable: boolean): Promise<boolean> => {
+  // Toggle beacon tracking - returns { success, needsDisclosure }
+  const toggleBeaconTracking = useCallback(async (enable: boolean): Promise<{ success: boolean; needsDisclosure: boolean }> => {
     if (!isNative) {
       toast.error('ميزة Beacon تعمل فقط في النسخة Native');
-      return false;
+      return { success: false, needsDisclosure: false };
     }
 
     if (enable) {
+      // 0. Check if disclosure was accepted (Google Play requirement)
+      if (!wasDisclosureAccepted()) {
+        return { success: false, needsDisclosure: true };
+      }
+
       // 1. Check location services first
       const locationOk = await checkLocationServices();
-      if (!locationOk) return false;
+      if (!locationOk) return { success: false, needsDisclosure: false };
 
       // 2. Request permissions
       const hasPermissions = await requestPermissions();
-      if (!hasPermissions) return false;
+      if (!hasPermissions) return { success: false, needsDisclosure: false };
 
       // 3. Check Bluetooth
       const btEnabled = await isBluetoothEnabled();
       if (!btEnabled) {
         const enabled = await enableBluetooth();
-        if (!enabled) return false;
+        if (!enabled) return { success: false, needsDisclosure: false };
       }
 
       // 4. Start service
@@ -283,19 +292,26 @@ export const useNativeBeacon = () => {
         setServiceRunning(true);
         updateSettings({ enabled: true });
         toast.success('تم تفعيل تتبع Beacon');
-        return true;
+        return { success: true, needsDisclosure: false };
       } else {
         toast.error('فشل في تشغيل خدمة Beacon');
-        return false;
+        return { success: false, needsDisclosure: false };
       }
     } else {
       await stopBeaconService();
       setServiceRunning(false);
       updateSettings({ enabled: false });
       toast.success('تم إيقاف تتبع Beacon');
-      return true;
+      return { success: true, needsDisclosure: false };
     }
   }, [isNative, checkLocationServices, requestPermissions, enableBluetooth, updateSettings]);
+
+  // Accept disclosure and continue with tracking
+  const acceptDisclosureAndEnable = useCallback(async (): Promise<boolean> => {
+    markDisclosureAccepted();
+    const result = await toggleBeaconTracking(true);
+    return result.success;
+  }, [toggleBeaconTracking]);
 
   // Test scan
   const performTestScan = useCallback(async () => {
@@ -447,6 +463,7 @@ export const useNativeBeacon = () => {
     requestPermissions,
     enableBluetooth,
     toggleBeaconTracking,
+    acceptDisclosureAndEnable,
     performTestScan,
     performManualCheckIn,
     performManualCheckOut,
@@ -454,6 +471,9 @@ export const useNativeBeacon = () => {
     copyUuid,
     openAppSettings: handleOpenAppSettings,
     openLocationSettings: handleOpenLocationSettings,
+
+    // Disclosure state
+    wasDisclosureAccepted,
 
     // Utilities
     formatTime: formatTimeArabicNative,

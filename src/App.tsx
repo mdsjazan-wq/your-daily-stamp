@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Install from "./pages/Install";
 import Settings from "./pages/Settings";
 import Statistics from "./pages/Statistics";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import UpdateNotification from "./components/UpdateNotification";
 
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/install" element={<Install />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/statistics" element={<Statistics />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
 
