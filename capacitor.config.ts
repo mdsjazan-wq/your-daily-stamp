@@ -24,6 +24,11 @@ const config: CapacitorConfig = {
         'access-background-location',
       ],
     },
+    // Background Task configuration
+    BackgroundTask: {
+      // Enable background execution on Android
+      enabled: true,
+    },
   },
 };
 

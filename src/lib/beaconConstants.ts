@@ -12,15 +12,17 @@ export const IBEACON_TYPE = 0x02;
 export const IBEACON_LENGTH = 0x15; // 21 bytes
 
 // RSSI thresholds (defaults - can be overridden by user settings)
-export const DEFAULT_RSSI_ENTRY_THRESHOLD = -80; // dBm - device is "in range" when RSSI >= this
-export const RSSI_EXIT_THRESHOLD = -90;  // dBm - device is "out of range" when RSSI < this
+// EXPANDED for better detection through pockets/bags
+export const DEFAULT_RSSI_ENTRY_THRESHOLD = -90; // dBm - device is "in range" when RSSI >= this
+export const RSSI_EXIT_THRESHOLD = -100;  // dBm - device is "out of range" when RSSI < this
 
-// Range presets for user selection
+// Range presets for user selection - EXPANDED for better coverage
 export const RSSI_PRESETS = {
   veryClose: { value: -60, label: 'قريب جداً (~1 متر)' },
   close: { value: -70, label: 'قريب (~3 متر)' },
   medium: { value: -80, label: 'متوسط (~5 متر)' },
   far: { value: -90, label: 'بعيد (~10 متر)' },
+  veryFar: { value: -95, label: 'بعيد جداً (~15 متر)' },
 } as const;
 
 // Timing constants (MAXIMUM SPEED - minimal constraints for testing)
@@ -30,8 +32,8 @@ export const EXIT_CONFIRM_SECONDS = 300;     // 5 minutes wait time before confi
 export const CONSECUTIVE_READS_REQUIRED = 1; // Single reading is enough for entry
 export const DEBOUNCE_DURATION_MS = 1 * 60 * 1000; // 1 minute debounce (for testing)
 
-// Immediate registration threshold (expanded range for faster detection)
-export const IMMEDIATE_RSSI_THRESHOLD = -85; // dBm - instant registration when RSSI >= this (expanded for pocket/bag detection)
+// Immediate registration threshold (MAXIMUM range for detection through obstacles)
+export const IMMEDIATE_RSSI_THRESHOLD = -95; // dBm - instant registration when RSSI >= this (maximum sensitivity)
 
 // Business rules constants (defaults - can be overridden by user settings)
 export const DEFAULT_MIN_WORK_DURATION_HOURS = 4;    // Minimum hours before allowing auto check-out
