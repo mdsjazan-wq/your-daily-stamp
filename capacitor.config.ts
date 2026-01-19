@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.869d11d7b08e4a16821c09d115bc2179',
-  appName: 'your-daily-stamp',
+  appId: 'sa.srch.basemti',
+  appName: 'بصمتي',
   webDir: 'dist',
   plugins: {
     // Local Notifications configuration
