@@ -1,5 +1,5 @@
 {
-  "name": "بصمتي – نظام الدوام المرن",
+  "name": "بصمتي",
   "short_name": "بصمتي",
   "description": "نظام تسجيل الحضور والانصراف للموظفين",
   "start_url": "./",
@@ -9,6 +9,7 @@
   "orientation": "portrait",
   "dir": "rtl",
   "lang": "ar",
+  "id": "sa.srch.basemti",
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
