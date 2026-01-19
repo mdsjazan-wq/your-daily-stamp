@@ -2,9 +2,15 @@
 
 This document provides the complete setup instructions for enabling iBeacon detection on Android devices (Android 8-16).
 
+## ⚠️ تحذير مهم جداً: صلاحية neverForLocation
+
+**يجب عدم استخدام** `android:usesPermissionFlags="neverForLocation"` مع صلاحية `BLUETOOTH_SCAN`.
+
+هذا الفلاج يمنع اكتشاف iBeacons تماماً لأن Android يعتبر بيانات iBeacon بيانات موقع!
+
 ## 1. AndroidManifest.xml Permissions
 
-Add these permissions to `android/app/src/main/AndroidManifest.xml`:
+أضف هذه الصلاحيات في `android/app/src/main/AndroidManifest.xml`:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -12,7 +18,7 @@ Add these permissions to `android/app/src/main/AndroidManifest.xml`:
 
     <!-- Bluetooth Permissions -->
     <!-- For Android 12+ (API 31+) -->
-    <!-- IMPORTANT: Do NOT use android:usesPermissionFlags="neverForLocation" as it weakens iBeacon detection -->
+    <!-- ⚠️⚠️⚠️ لا تضف neverForLocation هنا! ⚠️⚠️⚠️ -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
@@ -23,13 +29,15 @@ Add these permissions to `android/app/src/main/AndroidManifest.xml`:
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" 
         android:maxSdkVersion="30" />
     
-    <!-- Location Permission (required for BLE scanning) -->
+    <!-- Location Permission (مطلوب لـ BLE و iBeacon) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     
     <!-- Foreground Service Permission -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     
     <!-- Notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -71,7 +79,7 @@ Add these permissions to `android/app/src/main/AndroidManifest.xml`:
             android:name=".BeaconScanService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="location|connectedDevice" />
 
     </application>
 
@@ -195,16 +203,27 @@ For reliable background operation, users should:
 
 ## 5. Fixed Configuration Values
 
-These values are hardcoded for stability:
+These values are optimized for maximum detection range:
 
 | Setting | Value | Description |
 |---------|-------|-------------|
 | UUID | `1B6295D5-4F74-4C58-A2D8-CD83CA26BDF4` | Fixed iBeacon UUID |
-| Entry Threshold | -80 dBm | RSSI for entering range |
-| Exit Threshold | -90 dBm | RSSI for exiting range |
-| Scan Interval | 5 seconds | Time between scans |
-| Exit Confirm | 30 seconds | Time before confirming exit |
-| Consecutive Reads | 3 | Required readings for entry |
+| Entry Threshold | **-90 dBm** | RSSI for entering range (expanded) |
+| Exit Threshold | **-100 dBm** | RSSI for exiting range (expanded) |
+| Immediate Threshold | **-95 dBm** | Instant registration threshold |
+| Scan Interval | 1 second | Time between scans (fast) |
+| Exit Confirm | 5 minutes | Time before confirming exit |
+| Consecutive Reads | 1 | Single reading for entry |
+
+## 5.1 Beacon TX Power Settings
+
+For best detection through pockets and bags, configure your BC04P-MultiBeacon:
+
+| Setting | Recommended Value |
+|---------|-------------------|
+| TX Power | **+4 dBm** (maximum) |
+| Advertising Interval | **100ms** (fastest) |
+| Mode | iBeacon |
 
 ## 6. Building the App
 

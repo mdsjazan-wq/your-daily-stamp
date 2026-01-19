@@ -3,6 +3,7 @@
  * Handles background BLE scanning on Android using Capacitor
  * 
  * Now uses @capawesome-team/capacitor-android-foreground-service
+ * combined with @capawesome/capacitor-background-task
  * for TRUE background operation with screen locked.
  */
 
@@ -14,12 +15,15 @@ import { playEntrySound, playExitSound, getAudioSettings } from './beaconAudio';
 import { showNotification } from './nativeNotifications';
 import { logBeaconEvent, registerBeaconAttendance } from './beaconService';
 import { addDiagnosticEntry } from './beaconDiagnostics';
-import { startNativeForegroundService, stopNativeForegroundService } from './androidForegroundService';
+import { startNativeForegroundService, stopNativeForegroundService, updateForegroundNotification } from './androidForegroundService';
+import { startBackgroundTask, stopBackgroundTask } from './nativeBackgroundTask';
 
 // Service state
 let isServiceRunning = false;
 let scanIntervalId: ReturnType<typeof setInterval> | null = null;
 let onStateChangeCallback: ((state: BeaconRangeState) => void) | null = null;
+let isInBackground = false;
+let backgroundScanCount = 0;
 
 // Storage key for service state
 const SERVICE_STATE_KEY = 'beaconServiceEnabled';
@@ -58,7 +62,17 @@ export const setStateChangeCallback = (callback: ((state: BeaconRangeState) => v
 const performBackgroundScan = async (): Promise<void> => {
   let targetBeacon: ScannedBeacon | null = null;
 
-  addDiagnosticEntry('scan_start', 'بدء المسح الدوري');
+  backgroundScanCount++;
+  const scanLabel = isInBackground ? `المسح في الخلفية #${backgroundScanCount}` : 'المسح الدوري';
+  addDiagnosticEntry('scan_start', scanLabel);
+
+  // Update foreground notification with scan count when in background
+  if (isInBackground) {
+    await updateForegroundNotification(
+      'المسح النشط في الخلفية',
+      `عدد المسح: ${backgroundScanCount} | يتم البحث عن Beacon...`
+    );
+  }
 
   await startBeaconScan(
     SCAN_DURATION_MS,
@@ -71,7 +85,7 @@ const performBackgroundScan = async (): Promise<void> => {
           console.log(`📡 Beacon detected: RSSI ${beacon.rssi}`);
           addDiagnosticEntry('beacon_found', `تم اكتشاف Beacon`, { 
             rssi: beacon.rssi,
-            details: { deviceId: beacon.deviceId, matchesTarget: beacon.matchesTarget }
+            details: { deviceId: beacon.deviceId, matchesTarget: beacon.matchesTarget, background: isInBackground }
           });
         }
       }
@@ -88,9 +102,17 @@ const performBackgroundScan = async (): Promise<void> => {
   const rssi = targetBeacon?.rssi ?? null;
   
   if (rssi === null) {
-    addDiagnosticEntry('scan_end', 'انتهى المسح - لم يتم العثور على الجهاز');
+    addDiagnosticEntry('scan_end', `انتهى المسح - لم يتم العثور على الجهاز ${isInBackground ? '(خلفية)' : ''}`);
   } else {
-    addDiagnosticEntry('scan_end', `انتهى المسح - RSSI: ${rssi}`, { rssi });
+    addDiagnosticEntry('scan_end', `انتهى المسح - RSSI: ${rssi} ${isInBackground ? '(خلفية)' : ''}`, { rssi });
+    
+    // Update notification when beacon found
+    if (isInBackground) {
+      await updateForegroundNotification(
+        '📡 Beacon قريب!',
+        `قوة الإشارة: ${rssi} dBm`
+      );
+    }
   }
   
   const { event, state } = processScanResultNative(rssi);
@@ -102,7 +124,7 @@ const performBackgroundScan = async (): Promise<void> => {
   // Handle entry event - determine if check-in or check-out
   if (event === 'enter') {
     console.log(`🚀 Entry event triggered!`);
-    addDiagnosticEntry('entry', 'دخول نطاق Beacon', { rssi, details: { state: state.isInRange } });
+    addDiagnosticEntry('entry', 'دخول نطاق Beacon', { rssi, details: { state: state.isInRange, background: isInBackground } });
     await handleRangeEnter();
   }
 };
@@ -216,6 +238,23 @@ const handleAutoCheckOut = async (): Promise<void> => {
 };
 
 /**
+ * Background scan loop - runs when app is in background
+ */
+const runBackgroundScanLoop = async (): Promise<void> => {
+  console.log('🔄 Background scan loop started');
+  addDiagnosticEntry('info', '🔄 بدء حلقة المسح في الخلفية');
+  
+  // Keep scanning while in background and service is running
+  while (isInBackground && isServiceRunning) {
+    await performBackgroundScan();
+    // Wait for next scan interval
+    await new Promise(resolve => setTimeout(resolve, SCAN_INTERVAL_SECONDS * 1000));
+  }
+  
+  console.log('🔄 Background scan loop ended');
+};
+
+/**
  * Start the beacon monitoring service
  */
 export const startBeaconService = async (): Promise<boolean> => {
@@ -244,8 +283,22 @@ export const startBeaconService = async (): Promise<boolean> => {
       autoCancel: false,
     });
 
-    // Start periodic scanning
-    scanIntervalId = setInterval(performBackgroundScan, SCAN_INTERVAL_SECONDS * 1000);
+    // Setup background task to keep scanning when app goes to background
+    await startBackgroundTask(async () => {
+      isInBackground = true;
+      backgroundScanCount = 0;
+      addDiagnosticEntry('info', '📱 التطبيق في الخلفية - استمرار المسح');
+      
+      // Run continuous background scanning
+      await runBackgroundScanLoop();
+    });
+
+    // Start periodic scanning for foreground
+    scanIntervalId = setInterval(() => {
+      if (!isInBackground) {
+        performBackgroundScan();
+      }
+    }, SCAN_INTERVAL_SECONDS * 1000);
     
     // Perform initial scan
     performBackgroundScan();
@@ -253,7 +306,7 @@ export const startBeaconService = async (): Promise<boolean> => {
     isServiceRunning = true;
     saveServiceState(true);
     
-    console.log('Beacon service started with native foreground service');
+    console.log('Beacon service started with native foreground service + background task');
     return true;
   } catch (error) {
     console.error('Failed to start beacon service:', error);
@@ -266,6 +319,10 @@ export const startBeaconService = async (): Promise<boolean> => {
  * Stop the beacon monitoring service
  */
 export const stopBeaconService = async (): Promise<void> => {
+  // Stop background task first
+  isInBackground = false;
+  await stopBackgroundTask();
+
   if (scanIntervalId) {
     clearInterval(scanIntervalId);
     scanIntervalId = null;
@@ -286,6 +343,7 @@ export const stopBeaconService = async (): Promise<void> => {
 
   isServiceRunning = false;
   saveServiceState(false);
+  backgroundScanCount = 0;
   
   addDiagnosticEntry('info', '⏹️ تم إيقاف خدمة المراقبة');
   console.log('Beacon service stopped');

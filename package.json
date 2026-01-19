@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@capacitor-community/bluetooth-le": "^7.3.0",
+    "@capacitor/app": "^8.0.0",
     "@capacitor/core": "^8.0.0",
     "@capacitor/local-notifications": "^8.0.0",
     "@capawesome-team/capacitor-android-foreground-service": "^8.0.0",
+    "@capawesome/capacitor-background-task": "^8.0.0",
     "@capgo/capacitor-native-biometric": "^8.0.3",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
