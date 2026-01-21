@@ -160,43 +160,6 @@ const NativeBeaconSettings = () => {
           <h2 className="text-lg font-bold text-foreground">إعدادات Beacon</h2>
         </div>
 
-        {/* Bluetooth Status */}
-        <div className={`mb-4 p-3 rounded-xl ${bluetoothOn ? 'bg-muted/50' : 'bg-red-500/10 border border-red-500/30'}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm">
-              {bluetoothOn ? (
-                <>
-                  <Bluetooth className="w-4 h-4 text-primary" />
-                  <span className="text-foreground">البلوتوث مفعّل</span>
-                </>
-              ) : (
-                <>
-                  <BluetoothOff className="w-4 h-4 text-destructive" />
-                  <span className="text-red-600 dark:text-red-400">البلوتوث غير مفعّل</span>
-                </>
-              )}
-            </div>
-            {!bluetoothOn && (
-              <div className="flex gap-2">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={enableBluetooth}
-                >
-                  تفعيل
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={openAppSettings}
-                >
-                  الإعدادات
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Enable Beacon Tracking */}
         <div className="flex items-center justify-between py-3 border-b border-border/50">
           <div className="flex-1">
@@ -215,9 +178,36 @@ const NativeBeaconSettings = () => {
                 await toggleBeaconTracking(false);
               }
             }}
-            disabled={!bluetoothOn}
           />
         </div>
+
+        {/* Bluetooth Status - Only show when tracking is enabled but Bluetooth is off */}
+        {settings.enabled && !bluetoothOn && (
+          <div className="mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                <BluetoothOff className="w-4 h-4 text-amber-500" />
+                <span className="text-amber-700 dark:text-amber-400">يرجى تفعيل البلوتوث</span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={enableBluetooth}
+                >
+                  تفعيل
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openAppSettings}
+                >
+                  الإعدادات
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Privacy Consent Dialog - Google Play Compliance */}
         <PrivacyConsentDialog
