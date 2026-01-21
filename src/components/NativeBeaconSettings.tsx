@@ -22,6 +22,7 @@ import {
   BatteryWarning,
   Signal,
   Timer,
+  Eye,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -105,8 +106,14 @@ const NativeBeaconSettings = () => {
     );
   }
 
-  // Web/PWA View - Show simple message
-  if (!isNative) {
+  // Check for preview mode (development or query param)
+  const isPreviewMode = 
+    import.meta.env.DEV || 
+    window.location.search.includes('preview=true') ||
+    window.location.hash.includes('preview=true');
+
+  // Web/PWA View - Show simple message (unless in preview mode)
+  if (!isNative && !isPreviewMode) {
     return (
       <div className="space-y-6">
         <div className="bg-card rounded-3xl shadow-card p-6">
@@ -133,9 +140,19 @@ const NativeBeaconSettings = () => {
     );
   }
 
-  // Native View
+  // Native View (or Preview Mode)
   return (
     <div className="space-y-6">
+      {/* Preview Mode Banner */}
+      {!isNative && isPreviewMode && (
+        <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+          <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-400">
+            <Eye className="w-4 h-4" />
+            <span>وضع المعاينة - الوظائف معطلة في المتصفح</span>
+          </div>
+        </div>
+      )}
+
       {/* Main Card */}
       <div className="bg-card rounded-3xl shadow-card p-6">
         <div className="flex items-center gap-2 mb-4">
