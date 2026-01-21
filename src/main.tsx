@@ -4,10 +4,9 @@ import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
 import { stopAlarmSound } from "./lib/notifications";
-import { initializeNativePermissions } from "./lib/nativePermissions";
 
-// طلب الأذونات تلقائياً عند أول فتح للتطبيق (Native فقط)
-initializeNativePermissions();
+// Google Play Compliance: لا يتم طلب الأذونات تلقائياً
+// يجب على المستخدم تفعيل التتبع يدوياً من صفحة الإعدادات
 
 // تسجيل Service Worker للعمل بدون إنترنت
 registerSW({ immediate: true });
