@@ -1,5 +1,5 @@
 // رقم النسخة يتبع تنسيق: major.minor.patch
-export const APP_VERSION = "1.4.0";
+export const APP_VERSION = "1.4.1";
 
 // معرف البناء التلقائي (يتغير مع كل نشر)
 export const APP_BUILD_ID = import.meta.env.VITE_BUILD_TIME || "dev";
@@ -11,4 +11,4 @@ export const APP_NAME = "بصمتي";
 export const APP_ID = "sa.srch.basemti";
 
 // رقم البناء للـ Android (يجب زيادته مع كل إصدار)
-export const VERSION_CODE = 4;
+export const VERSION_CODE = 5;
