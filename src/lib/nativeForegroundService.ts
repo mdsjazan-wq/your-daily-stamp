@@ -15,7 +15,7 @@ import { playEntrySound, playExitSound, getAudioSettings } from './beaconAudio';
 import { showNotification } from './nativeNotifications';
 import { logBeaconEvent, registerBeaconAttendance } from './beaconService';
 import { addDiagnosticEntry } from './beaconDiagnostics';
-import { startNativeForegroundService, stopNativeForegroundService, updateForegroundNotification } from './androidForegroundService';
+import { startNativeForegroundService, stopNativeForegroundService, updateForegroundNotification, setOnStopRequestedCallback } from './androidForegroundService';
 import { startBackgroundTask, stopBackgroundTask } from './nativeBackgroundTask';
 
 // Service state
@@ -269,6 +269,13 @@ export const startBeaconService = async (): Promise<boolean> => {
   }
 
   try {
+    // Register callback for when user clicks "Stop Tracking" button in notification
+    setOnStopRequestedCallback(async () => {
+      console.log('🛑 Stop requested from notification button');
+      addDiagnosticEntry('info', '🛑 المستخدم طلب إيقاف التتبع من الإشعار');
+      await stopBeaconService();
+    });
+    
     // Start the native foreground service FIRST for true background operation
     await startNativeForegroundService();
     
