@@ -123,18 +123,14 @@ export const useNativeBeacon = () => {
   // Refs
   const scanTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Initialize
+  // Initialize - Google Play Compliance: NO permission requests on app launch
   useEffect(() => {
     const init = async () => {
       const native = isNativePlatform();
       setIsNative(native);
 
       if (native) {
-        // Check Bluetooth status
-        const btEnabled = await isBluetoothEnabled();
-        setBluetoothOn(btEnabled);
-
-        // Check stored service state
+        // Check stored service state ONLY (no BLE calls that trigger permissions)
         const storedSettings = getStoredSettings();
         const isRunning = isBeaconServiceRunning() || getStoredServiceState();
         setServiceRunning(isRunning);
@@ -142,8 +138,7 @@ export const useNativeBeacon = () => {
         // Google Play Compliance: NO auto-start on app launch
         // User must explicitly enable tracking from Settings page
         // This ensures proper disclosure flow is followed
-        if (storedSettings.enabled && btEnabled && isRunning) {
-          // Only maintain existing service state, don't auto-start
+        if (storedSettings.enabled && isRunning) {
           console.log('ℹ️ Beacon service state maintained from previous session');
         }
       }
