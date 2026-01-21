@@ -70,8 +70,9 @@ const getStoredSettings = (): NativeBeaconSettings => {
     if (saved) {
       const parsed = JSON.parse(saved);
       // Merge with defaults for backward compatibility
+      // Google Play Compliance: Default to FALSE - user must explicitly enable
       return {
-        enabled: parsed.enabled ?? true, // Default to TRUE (enabled by default)
+        enabled: parsed.enabled ?? false,
         autoCheckIn: parsed.autoCheckIn ?? true,
         autoCheckOut: parsed.autoCheckOut ?? true,
         rssiThreshold: parsed.rssiThreshold ?? DEFAULT_RSSI_ENTRY_THRESHOLD,
@@ -81,8 +82,9 @@ const getStoredSettings = (): NativeBeaconSettings => {
   } catch {
     // Ignore
   }
+  // Google Play Compliance: Default to FALSE - user must explicitly enable
   return {
-    enabled: true, // Default to TRUE (enabled by default)
+    enabled: false,
     autoCheckIn: true,
     autoCheckOut: true,
     rssiThreshold: DEFAULT_RSSI_ENTRY_THRESHOLD,
@@ -137,14 +139,12 @@ export const useNativeBeacon = () => {
         const isRunning = isBeaconServiceRunning() || getStoredServiceState();
         setServiceRunning(isRunning);
 
-        // Auto-start service if enabled in settings and Bluetooth is on
-        if (storedSettings.enabled && btEnabled && !isRunning) {
-          console.log('🚀 Auto-starting Beacon service...');
-          const started = await startBeaconService();
-          setServiceRunning(started);
-          if (started) {
-            console.log('✅ Beacon service auto-started successfully');
-          }
+        // Google Play Compliance: NO auto-start on app launch
+        // User must explicitly enable tracking from Settings page
+        // This ensures proper disclosure flow is followed
+        if (storedSettings.enabled && btEnabled && isRunning) {
+          // Only maintain existing service state, don't auto-start
+          console.log('ℹ️ Beacon service state maintained from previous session');
         }
       }
 

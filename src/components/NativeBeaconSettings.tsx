@@ -43,7 +43,7 @@ import {
 import useNativeBeacon from '@/hooks/useNativeBeacon';
 import { playTestSound } from '@/lib/beaconAudio';
 import BeaconDiagnosticsLog from '@/components/BeaconDiagnosticsLog';
-import LocationDisclosureDialog from '@/components/LocationDisclosureDialog';
+import PrivacyConsentDialog from '@/components/PrivacyConsentDialog';
 
 const NativeBeaconSettings = () => {
   const {
@@ -88,7 +88,7 @@ const NativeBeaconSettings = () => {
   } = useNativeBeacon();
 
   const [showBatteryGuide, setShowBatteryGuide] = useState(false);
-  const [showDisclosure, setShowDisclosure] = useState(false);
+  const [showPrivacyConsent, setShowPrivacyConsent] = useState(false);
 
   // Show battery optimization guide on first enable
   useEffect(() => {
@@ -208,24 +208,27 @@ const NativeBeaconSettings = () => {
           <Switch
             checked={settings.enabled}
             onCheckedChange={async (checked) => {
-              const result = await toggleBeaconTracking(checked);
-              if (result.needsDisclosure) {
-                setShowDisclosure(true);
+              if (checked) {
+                // Google Play Compliance: Show privacy consent first
+                setShowPrivacyConsent(true);
+              } else {
+                await toggleBeaconTracking(false);
               }
             }}
             disabled={!bluetoothOn}
           />
         </div>
 
-        {/* Location Disclosure Dialog */}
-        <LocationDisclosureDialog
-          open={showDisclosure}
+        {/* Privacy Consent Dialog - Google Play Compliance */}
+        <PrivacyConsentDialog
+          open={showPrivacyConsent}
           onAccept={async () => {
-            setShowDisclosure(false);
+            setShowPrivacyConsent(false);
+            // After accepting privacy policy, enable tracking (will request permissions)
             await acceptDisclosureAndEnable();
           }}
           onDecline={() => {
-            setShowDisclosure(false);
+            setShowPrivacyConsent(false);
           }}
         />
 
